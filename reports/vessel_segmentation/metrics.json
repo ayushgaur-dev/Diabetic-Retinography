@@ -1,0 +1,39 @@
+{
+  "micro": {
+    "sensitivity": 0.628,
+    "recall": 0.628,
+    "specificity": 0.981,
+    "precision": 0.8259,
+    "f1": 0.7135,
+    "dice": 0.7135,
+    "iou": 0.5546,
+    "accuracy": 0.9368
+  },
+  "macro": {
+    "sensitivity_mean": 0.6331,
+    "sensitivity_std": 0.0593,
+    "specificity_mean": 0.9812,
+    "specificity_std": 0.0083,
+    "precision_mean": 0.8254,
+    "precision_std": 0.08,
+    "f1_mean": 0.7132,
+    "f1_std": 0.051,
+    "dice_mean": 0.7132,
+    "dice_std": 0.051,
+    "iou_mean": 0.5565,
+    "iou_std": 0.0587,
+    "accuracy_mean": 0.9368,
+    "accuracy_std": 0.0121
+  },
+  "n_images": 20,
+  "method": "multiscale_tophat_classical",
+  "tuning_images": [
+    "21_training",
+    "22_training",
+    "23_training"
+  ],
+  "eval_split": "DRIVE training (20 images) vs 1st_manual, FOV-restricted",
+  "test_split_note": "official test annotations not shipped in this mirror \u2014 no test metrics reported",
+  "mean_ms_per_image": 28.5,
+  "image_size": "565x584"
+}

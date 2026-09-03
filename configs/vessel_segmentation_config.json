@@ -1,0 +1,25 @@
+{
+  "_comment": "SIH26038 Phase 4A — classical vessel-segmentation baseline. ENGINEERING HEURISTICS tuned on DRIVE training images 21-23 only (frozen thereafter). Evaluated on all 20 DRIVE training images vs 1st_manual; official test annotations unavailable in this mirror (see docs/VESSEL_SEGMENTATION.md).",
+  "method": "multiscale_tophat_classical",
+  "tuning_images": ["21_training", "22_training", "23_training"],
+  "preprocessing": {
+    "comment": "Green channel only (see preprocessing.py). Percentile stretch is mild and FOV-restricted.",
+    "stretch_low_percentile": 1.0,
+    "stretch_high_percentile": 99.0
+  },
+  "enhancement": {
+    "comment": "White top-hat on inverted green at multiple disk scales; max-projection. Scales cover ~2-10px wide vessels at 565x584.",
+    "scales": [3, 5, 9, 15]
+  },
+  "segmentation": {
+    "comment": "Percentile threshold inside FOV: response above this percentile -> vessel. Starting point 89 ~= 100 - 11% vessel fraction observed on image 21.",
+    "method": "percentile",
+    "percentile": 89.0
+  },
+  "postprocessing": {
+    "comment": "Conservative: drop tiny components only (thin vessels preserved); optional 3x3 closing.",
+    "min_component_size": 25,
+    "closing_kernel": 3,
+    "apply_closing": true
+  }
+}
