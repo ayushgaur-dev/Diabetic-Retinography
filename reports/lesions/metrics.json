@@ -1,0 +1,79 @@
+{
+  "method": "classical_multichannel_candidates",
+  "tuning_ids": [
+    "IDRiD_01",
+    "IDRiD_02",
+    "IDRiD_03",
+    "IDRiD_04",
+    "IDRiD_05",
+    "IDRiD_06",
+    "IDRiD_07",
+    "IDRiD_08"
+  ],
+  "eval_split": "IDRiD Segmentation test",
+  "mean_ms": 9209.6,
+  "median_ms": 11215.3,
+  "image_size": "4288x2848",
+  "per_lesion": {
+    "microaneurysm": {
+      "n_images": 27,
+      "positive_images": 27,
+      "images_with_candidates": 27,
+      "pixel_micro": {
+        "precision": 0.1012,
+        "recall": 0.062,
+        "specificity": 0.9995,
+        "f1": 0.0769,
+        "iou": 0.04,
+        "dice": 0.0769
+      },
+      "object_recall_mean": 0.1799,
+      "object_precision_mean": 0.0997
+    },
+    "hemorrhage": {
+      "n_images": 27,
+      "positive_images": 27,
+      "images_with_candidates": 27,
+      "pixel_micro": {
+        "precision": 0.4342,
+        "recall": 0.0599,
+        "specificity": 0.9992,
+        "f1": 0.1053,
+        "iou": 0.0555,
+        "dice": 0.1053
+      },
+      "object_recall_mean": 0.0934,
+      "object_precision_mean": 0.2046
+    },
+    "hard_exudate": {
+      "n_images": 27,
+      "positive_images": 27,
+      "images_with_candidates": 27,
+      "pixel_micro": {
+        "precision": 0.4043,
+        "recall": 0.1626,
+        "specificity": 0.9974,
+        "f1": 0.2319,
+        "iou": 0.1312,
+        "dice": 0.2319
+      },
+      "object_recall_mean": 0.137,
+      "object_precision_mean": 0.3727
+    },
+    "soft_exudate": {
+      "n_images": 27,
+      "positive_images": 14,
+      "images_with_candidates": 9,
+      "pixel_micro": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "specificity": 0.9988,
+        "f1": 0.0,
+        "iou": 0.0,
+        "dice": 0.0
+      },
+      "object_recall_mean": 0.2593,
+      "object_precision_mean": 0.2593
+    }
+  }
+}

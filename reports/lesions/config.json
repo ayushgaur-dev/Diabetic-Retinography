@@ -1,0 +1,93 @@
+{
+  "method": "classical_multichannel_candidates",
+  "tuning_ids": [
+    "IDRiD_01",
+    "IDRiD_02",
+    "IDRiD_03",
+    "IDRiD_04",
+    "IDRiD_05",
+    "IDRiD_06",
+    "IDRiD_07",
+    "IDRiD_08"
+  ],
+  "common": {
+    "working_width": 1072,
+    "reference_width": 1072,
+    "green_stretch_low": 1.0,
+    "green_stretch_high": 99.0,
+    "status_high_score": 0.55,
+    "status_low_score": 0.35
+  },
+  "microaneurysm": {
+    "tophat_scales": [
+      2,
+      3,
+      4,
+      6
+    ],
+    "response_percentile": 98.5,
+    "min_area": 3,
+    "max_area": 220,
+    "min_circularity": 0.45,
+    "max_vessel_overlap": 0.6,
+    "weights": {
+      "contrast": 0.35,
+      "shape": 0.35,
+      "isolation": 0.3
+    },
+    "comment": "Small dark blobs: top-hat on inverted green at small scales; tight size + circularity; vessel-overlap veto."
+  },
+  "hemorrhage": {
+    "background_kernel": 51,
+    "response_percentile": 97.0,
+    "min_area": 8,
+    "max_area": 3000,
+    "min_circularity": 0.12,
+    "max_vessel_overlap": 0.8,
+    "weights": {
+      "contrast": 0.4,
+      "shape": 0.2,
+      "isolation": 0.4
+    },
+    "comment": "Larger dark/red regions: regional darkness vs median-blurred background + red darkness (top-hat misses soft-edged blotches). Areas set from IDRiD GT sizes (median HE ~34 working-px at 1072)."
+  },
+  "hard_exudate": {
+    "brightness_percentile": 90.0,
+    "yellow_threshold": 48.0,
+    "min_area": 15,
+    "max_area": 30000,
+    "min_circularity": 0.2,
+    "weights": {
+      "brightness": 0.35,
+      "color": 0.35,
+      "shape": 0.3
+    },
+    "comment": "Bright yellow compact lesions: luminance gate + yellowness min(R,G)-B gate (saturation does NOT separate yellow exudates from reddish background \u2014 measured). Optic-disc exclusion mandatory."
+  },
+  "soft_exudate": {
+    "brightness_percentile": 90.0,
+    "max_saturation": 190.0,
+    "min_area": 30,
+    "max_area": 80000,
+    "min_circularity": 0.08,
+    "weights": {
+      "brightness": 0.3,
+      "color": 0.3,
+      "shape": 0.4
+    },
+    "comment": "Pale, fluffy, low-saturation bright regions, larger and irregular: modest luminance gate + LOW saturation gate (cotton-wool is paler than reddish background). Weakly tuned (only 2 SE-positive tuning images)."
+  },
+  "optic_disc_exclusion": {
+    "dilation_factor": 1.6,
+    "low_confidence_dilation_factor": 1.2,
+    "comment": "Dilated 4B disc circle zeroed for bright-lesion detectors. LOW_CONFIDENCE -> smaller dilation + warning; NOT_DETECTED -> no exclusion + warning."
+  },
+  "candidate_scoring": {
+    "comment": "Status cutoffs shared by all four detectors (heuristic evidence confidence, NOT probability)."
+  },
+  "postprocessing": {
+    "fill_holes": true,
+    "comment": "Conservative: hole filling + FOV clipping only. No aggressive smoothing (MA safety)."
+  },
+  "_comment": "SIH26038 Phase 4D \u2014 lesion evidence baseline. ENGINEERING HEURISTICS tuned on 8 IDRiD training images (IDRiD_01..08) only, frozen thereafter. Areas are given at reference_width and scaled by (working_width/reference_width)^2. Weights sum to 1.0 per detector."
+}
