@@ -1,0 +1,44 @@
+{
+  "method": "bright_candidate_plus_vessel_convergence",
+  "tuning_ids": [
+    "drishtiGS_002",
+    "drishtiGS_004",
+    "drishtiGS_008",
+    "drishtiGS_010",
+    "drishtiGS_012"
+  ],
+  "working_resolution": {
+    "max_width": 800,
+    "comment": "Internal processing width; coordinates mapped back to original. Documented, not hidden."
+  },
+  "candidates": {
+    "red_percentile": 97.0,
+    "closing_kernel_frac": 0.02,
+    "min_area_frac_fov": 0.002,
+    "max_area_frac_fov": 0.05,
+    "min_circularity": 0.25,
+    "max_aspect_ratio": 2.2,
+    "contrast_ring_width_frac": 0.5,
+    "comment": "Red-channel top-percentile bright regions in FOV, filtered by normalized area + shape."
+  },
+  "convergence": {
+    "ring_inner_factor": 1.0,
+    "ring_outer_factor": 2.0,
+    "comment": "Vessel density in annulus [r, 2r] around candidate vs global FOV density (Phase 4A mask at working resolution). Support evidence only."
+  },
+  "scoring": {
+    "weights": {
+      "brightness": 0.3,
+      "contrast": 0.25,
+      "geometry": 0.2,
+      "convergence": 0.25
+    },
+    "comment": "Weighted sum of 0..1 features; contributions exposed per candidate."
+  },
+  "decision": {
+    "detect_threshold": 0.45,
+    "low_confidence_threshold": 0.3,
+    "comment": "Algorithmic candidate-confidence cutoffs (NOT calibrated probabilities)."
+  },
+  "_comment": "SIH26038 Phase 4B \u2014 optic-disc localization baseline. ENGINEERING HEURISTICS tuned on 5 Drishti-GS training images only (frozen thereafter). All area thresholds are FOV-normalized fractions (resolution independent). Weights sum to 1.0."
+}

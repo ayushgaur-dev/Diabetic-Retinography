@@ -1,0 +1,22 @@
+{
+  "n_images": 51,
+  "n_detected": 50,
+  "detection_rate": 0.9804,
+  "mean_normalized_error": 0.0373,
+  "median_normalized_error": 0.0303,
+  "mean_center_error_px": 14.3,
+  "mean_bbox_iou": 0.79,
+  "detection_at_0.25": 0.9804,
+  "detection_at_0.5": 0.9804,
+  "detection_at_1.0": 0.9804,
+  "method": "bright_candidate_plus_vessel_convergence",
+  "tuning_ids": [
+    "drishtiGS_002",
+    "drishtiGS_004",
+    "drishtiGS_008",
+    "drishtiGS_010",
+    "drishtiGS_012"
+  ],
+  "eval_split": "Drishti-GS test (GT: diskCenter + OD softmap)",
+  "mean_ms": 142.2
+}
