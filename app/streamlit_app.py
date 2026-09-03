@@ -27,6 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.models.gradcam import make_gradcam_heatmap, overlay_gradcam  # noqa: E402
+from src.preprocessing.enhancement_pipeline import enhance_image  # noqa: E402
 from src.quality.quality_pipeline import assess_image  # noqa: E402
 from src.rag.generator import generate_report  # noqa: E402
 from src.rag.indexer import load_index, retrieve  # noqa: E402
@@ -212,16 +213,19 @@ with tab_screening:
         else:
             image = Image.open(uploaded_file)
 
-            # Phase 2 quality gate — runs BEFORE inference. UNGRADABLE blocks
-            # the DR classifier (no silent grade on a bad image); BORDERLINE
-            # warns and continues (enhancement arrives in Phase 3).
+            # Phase 2/3 quality gate — runs BEFORE inference. UNGRADABLE
+            # blocks the DR classifier; BORDERLINE is adaptively enhanced
+            # and reassessed (Phase 3); GOOD passes through untouched.
+            # Model preprocessing (resize + EfficientNet preprocess_input)
+            # is applied exactly once, downstream, to whichever image the
+            # gate selects (original or accepted-enhanced).
+            quality_array = np.array(image.convert("RGB").resize((IMG_SIZE, IMG_SIZE)))
             try:
-                quality_result, _quality_info = assess_image(
-                    np.array(image.convert("RGB").resize((IMG_SIZE, IMG_SIZE)))
-                )
+                quality_result, _quality_info = assess_image(quality_array)
             except Exception as e:
                 st.error(f"Quality assessment failed: {e}")
                 st.stop()
+            inference_array = quality_array  # default: original image
             if quality_result.status == "UNGRADABLE":
                 st.error(
                     "Image quality is UNGRADABLE — DR grading was NOT performed. "
@@ -232,13 +236,29 @@ with tab_screening:
                 st.warning(DEVICE_NOTICE)
                 st.stop()
             elif quality_result.status == "BORDERLINE":
-                st.warning(
-                    "Image quality is BORDERLINE — enhancement required "
-                    "(not yet implemented; Phase 3). Grading below ran on the "
-                    "original image and should be treated with extra caution."
-                )
-                for msg in quality_result.recapture_feedback:
-                    st.caption(f"- {msg}")
+                try:
+                    enh_result, _enh_info = enhance_image(quality_array)
+                except Exception as e:
+                    st.error(f"Enhancement failed: {e}")
+                    st.stop()
+                if enh_result.enhancement_successful:
+                    inference_array = enh_result.enhanced_image
+                    st.success(
+                        "BORDERLINE image enhanced and reassessed: "
+                        f"{enh_result.before_quality['status']} → "
+                        f"{enh_result.after_quality['status']} "
+                        f"({', '.join(enh_result.operations_applied)}). Grading "
+                        "ran on the enhanced image."
+                    )
+                else:
+                    st.error(
+                        "Enhancement did not rescue image quality — DR grading "
+                        "was NOT performed. Please recapture the image."
+                    )
+                    for w in enh_result.warnings:
+                        st.caption(f"- {w}")
+                    st.warning(DEVICE_NOTICE)
+                    st.stop()
             else:
                 st.caption(
                     f"Image quality: GOOD (score {quality_result.overall_score:.2f})."
@@ -253,7 +273,12 @@ with tab_screening:
                 st.stop()
 
             try:
-                preprocessed = preprocess_uploaded_image(image)
+                # inference_array is the gate-selected image: original (GOOD)
+                # or accepted-enhanced (BORDERLINE rescued). Model
+                # preprocessing runs exactly once, here.
+                preprocessed = preprocess_uploaded_image(
+                    Image.fromarray(inference_array)
+                )
                 probs = model.predict(preprocessed, verbose=0)[0]
                 predicted_grade = int(np.argmax(probs))
                 confidence = float(np.max(probs))
@@ -261,7 +286,7 @@ with tab_screening:
                 st.error(f"Model inference failed: {e}")
                 st.stop()
 
-            # Grad-CAM: overlay on the ORIGINAL (non-preprocessed) image
+            # Grad-CAM: overlay on the gate-selected (non-preprocessed) image
             # resized to IMG_SIZE, not the EfficientNet-preprocessed
             # tensor — see src/models/gradcam.py for why that gives a
             # visually accurate overlay. Failure here degrades to a
@@ -269,7 +294,7 @@ with tab_screening:
             gradcam_overlay, gradcam_error = None, None
             try:
                 heatmap, _ = make_gradcam_heatmap(preprocessed, model)
-                original_resized = np.array(image.convert("RGB").resize((IMG_SIZE, IMG_SIZE)))
+                original_resized = inference_array
                 gradcam_overlay = overlay_gradcam(original_resized, heatmap, img_size=IMG_SIZE)
             except Exception as e:
                 gradcam_error = str(e)

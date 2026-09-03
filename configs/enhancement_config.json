@@ -1,0 +1,42 @@
+{
+  "_comment": "SIH26038 Phase 3 — adaptive enhancement parameters. ALL values are ENGINEERING HEURISTICS, not clinically validated. Enhancement never runs on GOOD (bypass) or UNGRADABLE (reject) images — BORDERLINE only.",
+  "version": "1.0.0",
+  "clahe": {
+    "comment": "Applied to the L channel of LAB only (never independent RGB, which distorts colour).",
+    "clip_limit": 2.0,
+    "tile_grid": [8, 8]
+  },
+  "illumination": {
+    "comment": "Per-channel gain = channel_mean / blurred_background, clipped to gain_cap. Large median kernel estimates the slow illumination field while preserving vessels/lesions.",
+    "median_kernel": 41,
+    "gain_cap_lo": 0.5,
+    "gain_cap_hi": 2.0,
+    "target": "channel_mean"
+  },
+  "denoise": {
+    "comment": "Conservative bilateral filter (edge-preserving). Applied only when CLAHE ran (noise amplification guard) or mild global grain is detected — never aggressive smoothing (lesion safety).",
+    "diameter": 5,
+    "sigma_color": 25.0,
+    "sigma_space": 5.0
+  },
+  "color": {
+    "comment": "Masked gray-world with gain cap: corrects global cast, preserves relative colour differences. Triggered only when inter-channel mean spread exceeds trigger_spread.",
+    "trigger_spread": 25.0,
+    "max_gain": 1.25
+  },
+  "selection": {
+    "comment": "quality-component status -> operations. Focus BORDERLINE is deliberately NOT sharpened: blur destroys information that enhancement cannot recover (recorded as warning instead). allow_unsharp stays false unless a future phase justifies it with tests.",
+    "allow_unsharp": false,
+    "contrast_operations": ["clahe", "denoise"],
+    "illumination_operations": ["illumination_normalization", "color_normalization"],
+    "exposure_dark_operations": ["illumination_normalization"],
+    "exposure_bright_operations": []
+  },
+  "sanity_checks": {
+    "comment": "If any check fails, the enhanced image is DISCARDED and the original retained.",
+    "max_extra_clipped_fraction": 0.05,
+    "max_mean_shift": 40.0,
+    "max_channel_shift": 45.0,
+    "min_mask_fraction_ratio": 0.8
+  }
+}
