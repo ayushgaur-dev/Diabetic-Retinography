@@ -1,0 +1,42 @@
+{
+  "n_images": 103,
+  "n_detected": 103,
+  "n_low_confidence": 0,
+  "n_not_detected": 0,
+  "detection_rate": 1.0,
+  "mean_normalized_error": 0.0767,
+  "median_normalized_error": 0.0334,
+  "mean_center_error_px": 328.9,
+  "detection_at_0.025": 0.4369,
+  "detection_at_0.05": 0.5728,
+  "detection_at_0.1": 0.7961,
+  "laterality_left": {
+    "n": 47,
+    "detection_rate": 1.0,
+    "median_normalized_error": 0.043
+  },
+  "laterality_right": {
+    "n": 56,
+    "detection_rate": 1.0,
+    "median_normalized_error": 0.0254
+  },
+  "laterality_unknown": {
+    "n": 0,
+    "detection_rate": null,
+    "median_normalized_error": null
+  },
+  "method": "disc_relative_grid_plus_appearance_and_vessel_sparsity",
+  "tuning_ids": [
+    "IDRiD_001",
+    "IDRiD_002",
+    "IDRiD_003",
+    "IDRiD_004",
+    "IDRiD_005",
+    "IDRiD_006",
+    "IDRiD_007",
+    "IDRiD_008"
+  ],
+  "eval_split": "IDRiD Localization test (GT fovea centers)",
+  "normalization": "center error / image (FOV) width; GT disc diameters unavailable in IDRiD Localization",
+  "mean_ms": 1570.2
+}

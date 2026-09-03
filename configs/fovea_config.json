@@ -1,0 +1,50 @@
+{
+  "_comment": "SIH26038 Phase 4C — fovea localization baseline. ENGINEERING HEURISTICS tuned on 8 IDRiD training images only (frozen thereafter). All spatial parameters in disc-diameter (DD) units or FOV fractions — never raw pixels. Weights sum to 1.0.",
+  "method": "disc_relative_grid_plus_appearance_and_vessel_sparsity",
+  "tuning_ids": ["IDRiD_001", "IDRiD_002", "IDRiD_003", "IDRiD_004", "IDRiD_005", "IDRiD_006", "IDRiD_007", "IDRiD_008"],
+  "working_resolution": {
+    "comment": "Internal processing width; coordinates mapped back to original.",
+    "max_width": 800
+  },
+  "geometry": {
+    "comment": "Expected fovea = disc center + temporal*disc_fovea_distance + down*vertical_offset, in disc diameters (DD). Search disk radius in DD around it. Laterality inferred (see laterality.*).",
+    "disc_fovea_distance_dd": 2.5,
+    "vertical_offset_dd": 0.2,
+    "search_radius_dd": 1.5,
+    "grid_step_dd": 0.25,
+    "geometry_sigma_dd": 1.0,
+    "region_radius_dd": 0.5
+  },
+  "laterality": {
+    "comment": "Disc centroid x vs FOV centroid x decides temporal side. min_margin_frac_fov guards ambiguity.",
+    "min_margin_frac_fov": 0.03
+  },
+  "appearance": {
+    "comment": "Green-channel patch statistics. patch_radius_dd scales with anatomy.",
+    "patch_radius_dd": 0.35,
+    "ring_factor": 2.0,
+    "darkness_range": 40.0,
+    "contrast_range": 25.0
+  },
+  "vessel_sparsity": {
+    "comment": "Vessel-density heuristic (NOT a biomarker): inner-disk density vs outer-ring density. High outer/inner ratio favours avascular candidates.",
+    "inner_radius_dd": 0.4,
+    "outer_radius_dd": 1.2,
+    "ratio_cap": 4.0
+  },
+  "scoring": {
+    "weights": {
+      "geometry": 0.35,
+      "appearance": 0.35,
+      "vessel": 0.20,
+      "fov": 0.10
+    }
+  },
+  "decision": {
+    "comment": "Algorithmic candidate-confidence cutoffs (NOT calibrated probabilities).",
+    "detect_threshold": 0.45,
+    "low_confidence_threshold": 0.30,
+    "ambiguity_margin": 0.10,
+    "ambiguity_penalty": 0.30
+  }
+}
