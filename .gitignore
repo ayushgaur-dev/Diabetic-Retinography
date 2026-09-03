@@ -1,0 +1,48 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Secrets / credentials ---
+.env
+.env.*
+kaggle.json
+.streamlit/secrets.toml
+
+# --- Raw data (heavy — never commit, ~10GB of APTOS images) ---
+data/raw/*
+!data/raw/.gitkeep
+
+# --- Trained models / vector index (heavy, regenerable) ---
+models/*
+!models/.gitkeep
+data/guidelines/index/
+*.h5
+*.keras
+*.pt
+*.pth
+*.faiss
+
+# --- Claude Code ---
+.claude/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log

@@ -1,0 +1,14 @@
+pandas==2.3.3
+numpy==2.2.6
+Pillow==12.3.0
+opencv-python-headless==5.0.0.93
+matplotlib==3.10.9
+tensorflow==2.21.0
+scikit-learn==1.7.2
+sentence-transformers==5.7.0
+faiss-cpu==1.15.0
+kagglehub==1.0.2
+streamlit==1.60.0
+openai==3.0.0
+python-dotenv==1.2.2
+pytest==9.1.1
