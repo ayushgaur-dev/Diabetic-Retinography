@@ -1,0 +1,59 @@
+{
+  "_comment": "SIH26038 Phase 2 — image-quality thresholds. ALL values are ENGINEERING HEURISTICS set from synthetic-fixture measurements (see docs/IMAGE_QUALITY_ASSESSMENT.md). They are NOT clinically validated. Tune on real data in later phases; never hard-code replacements in Python.",
+  "focus": {
+    "comment": "Laplacian variance inside retinal mask (uint8 gray, 224px reference scale). Log-normalised: score = clamp((log10(var+1)-log_lo)/(log_hi-lo)).",
+    "log_lo": 1.6,
+    "log_hi": 3.0,
+    "good_var": 300.0,
+    "borderline_var": 60.0
+  },
+  "illumination": {
+    "comment": "Median gray inside mask (0-255) + non-uniformity = std of 4x4 block means inside mask.",
+    "median_good_lo": 50.0,
+    "median_good_hi": 150.0,
+    "median_borderline_lo": 30.0,
+    "median_borderline_hi": 180.0,
+    "nonuniformity_good": 18.0,
+    "nonuniformity_borderline": 30.0
+  },
+  "contrast": {
+    "comment": "Std of gray inside mask; spread = p95-p5 guard; very high std suggests clipping/over-processing.",
+    "std_good": 15.0,
+    "std_borderline": 8.0,
+    "std_excessive": 70.0,
+    "spread_borderline": 15.0
+  },
+  "exposure": {
+    "comment": "Fraction of mask pixels near black (<=black_level) or white (>=white_level).",
+    "black_level": 5,
+    "white_level": 250,
+    "black_borderline": 0.08,
+    "black_bad": 0.20,
+    "white_borderline": 0.02,
+    "white_bad": 0.08
+  },
+  "field_of_view": {
+    "comment": "mask_fraction = retinal-mask pixels / all pixels. Red-channel threshold factor is relative to image mean red.",
+    "red_factor": 0.35,
+    "red_floor": 10.0,
+    "mask_fraction_good": 0.40,
+    "mask_fraction_borderline": 0.20,
+    "min_plausible_fraction": 0.05
+  },
+  "retinal_coverage": {
+    "comment": "completeness = mask area / min-enclosing-circle area (1.0 = full circular field).",
+    "completeness_good": 0.75,
+    "completeness_borderline": 0.55
+  },
+  "aggregation": {
+    "comment": "Any component BAD -> UNGRADABLE. Else any BORDERLINE -> BORDERLINE. Else GOOD. overall_score = mean of component scores (advisory only; status rules decide).",
+    "weights": {
+      "focus": 1.0,
+      "illumination": 1.0,
+      "contrast": 1.0,
+      "exposure": 1.0,
+      "field_of_view": 1.5,
+      "retinal_coverage": 1.0
+    }
+  }
+}

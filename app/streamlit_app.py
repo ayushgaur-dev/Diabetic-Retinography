@@ -27,6 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.models.gradcam import make_gradcam_heatmap, overlay_gradcam  # noqa: E402
+from src.quality.quality_pipeline import assess_image  # noqa: E402
 from src.rag.generator import generate_report  # noqa: E402
 from src.rag.indexer import load_index, retrieve  # noqa: E402
 from src.rules.triage import triage_decision  # noqa: E402
@@ -210,6 +211,38 @@ with tab_screening:
             st.warning("Please upload a fundus image before generating a report.")
         else:
             image = Image.open(uploaded_file)
+
+            # Phase 2 quality gate — runs BEFORE inference. UNGRADABLE blocks
+            # the DR classifier (no silent grade on a bad image); BORDERLINE
+            # warns and continues (enhancement arrives in Phase 3).
+            try:
+                quality_result, _quality_info = assess_image(
+                    np.array(image.convert("RGB").resize((IMG_SIZE, IMG_SIZE)))
+                )
+            except Exception as e:
+                st.error(f"Quality assessment failed: {e}")
+                st.stop()
+            if quality_result.status == "UNGRADABLE":
+                st.error(
+                    "Image quality is UNGRADABLE — DR grading was NOT performed. "
+                    "Please recapture the image."
+                )
+                for msg in quality_result.recapture_feedback:
+                    st.write(f"- {msg}")
+                st.warning(DEVICE_NOTICE)
+                st.stop()
+            elif quality_result.status == "BORDERLINE":
+                st.warning(
+                    "Image quality is BORDERLINE — enhancement required "
+                    "(not yet implemented; Phase 3). Grading below ran on the "
+                    "original image and should be treated with extra caution."
+                )
+                for msg in quality_result.recapture_feedback:
+                    st.caption(f"- {msg}")
+            else:
+                st.caption(
+                    f"Image quality: GOOD (score {quality_result.overall_score:.2f})."
+                )
 
             model, model_error = load_vision_model()
             if model is None:
