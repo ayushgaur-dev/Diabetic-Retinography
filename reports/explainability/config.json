@@ -1,0 +1,41 @@
+{
+  "gradcam": {
+    "target_layer": null,
+    "normalization": "minmax",
+    "hot_quantile": 0.75,
+    "comment": "Predicted-class path reuses Phase 1 make_gradcam_heatmap unchanged. Targeted path uses the generic adapter below."
+  },
+  "overlap": {
+    "mask_interpolation": "nearest",
+    "heatmap_interpolation": "bilinear",
+    "comment": "Binary masks: nearest-neighbor. Heatmaps: bilinear. No coordinate shifts (verified by test)."
+  },
+  "consistency": {
+    "high_overlap": 0.4,
+    "low_overlap": 0.15,
+    "inactive_max": 0.3,
+    "comment": "Spatial-agreement categories between Grad-CAM and explicit evidence. NOT diagnostic certainty."
+  },
+  "ranking": {
+    "weights": {
+      "gradcam_overlap": 0.5,
+      "candidate_score": 0.3,
+      "area": 0.2
+    },
+    "comment": "Deterministic region ranking for explanation usefulness (NOT clinical severity). Weights sum to 1."
+  },
+  "faithfulness": {
+    "top_fraction": 0.2,
+    "fill": "blurred",
+    "blur_kernel": 31,
+    "comment": "Deletion check: mask top-activation pixels (fraction below), fill with blurred image, measure P(predicted) drop. Sanity check, NOT causal proof."
+  },
+  "visualization": {
+    "dpi": 110,
+    "figsize": [
+      13,
+      8
+    ]
+  },
+  "_comment": "SIH26038 Phase 6 \u2014 unified explainability. Descriptive layer only: never alters prediction/probabilities. ENGINEERING HEURISTICS throughout."
+}

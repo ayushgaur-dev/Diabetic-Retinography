@@ -1,0 +1,20 @@
+{
+  "n_images": 10,
+  "grade_distribution": {
+    "0": 2,
+    "1": 2,
+    "2": 2,
+    "3": 2,
+    "4": 2
+  },
+  "consistency_distribution": {
+    "SUPPORTIVE": 9,
+    "PARTIALLY_SUPPORTIVE": 1
+  },
+  "mean_regions": 40.0,
+  "mean_overlap": 0.3739,
+  "mean_prob_drop": 0.0315,
+  "median_prob_drop": 0.0338,
+  "mean_ms": 39655.0,
+  "note": "Descriptive explainability statistics on a 10-image subset; not clinical validation."
+}
