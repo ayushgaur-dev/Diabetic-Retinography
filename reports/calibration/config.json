@@ -1,0 +1,38 @@
+{
+  "random_seed": 42,
+  "initial_temperature": 1.0,
+  "optimizer": {
+    "method": "golden_section_logT",
+    "logT_bounds": [
+      -3.0,
+      3.0
+    ],
+    "tolerance": 1e-06,
+    "max_iterations": 200,
+    "comment": "Deterministic golden-section search on log(T); numpy only, no new dependencies."
+  },
+  "temperature_bounds": [
+    0.05,
+    20.0
+  ],
+  "logit_recovery": {
+    "method": "log_probabilities",
+    "eps": 1e-12,
+    "comment": "Model exposes softmax only: logits recovered as log(p) (exact for temperature scaling by shift-invariance). True pre-softmax logits preferred if ever accessible; artifact untouched."
+  },
+  "ece_bins": [
+    10,
+    15,
+    20
+  ],
+  "ece_mode": "equal_width",
+  "referable_threshold": 0.7,
+  "referable_grade_min": 2,
+  "bootstrap": {
+    "n_resamples": 1000,
+    "seed": 42
+  },
+  "model_artifact": "models/efficientnetb0_finetuned_patched.keras",
+  "split_source": "Phase 5 notebook 70/15/15 stratified seed 42 (reconstructed identically; IDs verified against reports/grading/per_image.csv)",
+  "_comment": "SIH26038 Phase 7 \u2014 temperature scaling config. T fitted on VALIDATION only; test is evaluation-only. Raw softmax is NEVER called calibrated."
+}
