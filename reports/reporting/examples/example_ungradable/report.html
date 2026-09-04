@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>AI-Assisted Retinal Screening Report</title>
+<style>body{font-family:sans-serif;max-width:900px;margin:auto;padding:16px}
+.card{border:1px solid #999;border-radius:8px;padding:12px;margin:12px 0}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:4px 8px}
+.badge{display:inline-block;padding:2px 10px;border-radius:10px;background:#eee}</style>
+</head><body>
+<h1>AI-Assisted Retinal Screening Report</h1>
+<p>Image: <code>SYNTHETIC-EXAMPLE-UNGRADABLE</code> | Status: COMPLETE</p>
+<div class="card"><h2>Screening Summary</h2>
+<p>Quality: <span class="badge">UNGRADABLE</span>
+Prediction: <b>not assessed</b></p>
+<p>Calibrated confidence: <b>None</b> |
+Referable probability: <b>None</b></p>
+<p>Workflow: <b>UNGRADABLE</b> |
+Priority: <b>NORMAL</b></p></div>
+<div class="card"><h2>Image Quality</h2><p>Status: UNGRADABLE</p></div>
+<div class="card"><h2>DR Grading</h2>
+<p>DR grade was not assessed (grading blocked or unavailable).</p>
+<table><tr><th>Grade</th><th>Raw</th><th>Calibrated</th></tr></table></div>
+<div class="card"><h2>Referable Screening</h2>
+<p>Score None vs threshold 0.7:
+<b>NON_REFERABLE</b></p></div>
+<div class="card"><h2>Lesion Evidence</h2>
+<table><tr><th>Type</th><th>Status</th><th>Candidates</th></tr><tr><td>microaneurysm</td><td>UNKNOWN</td><td>0</td></tr><tr><td>hemorrhage</td><td>UNKNOWN</td><td>0</td></tr><tr><td>hard_exudate</td><td>UNKNOWN</td><td>0</td></tr><tr><td>soft_exudate</td><td>UNKNOWN</td><td>0</td></tr></table>
+<p><i>Lesion findings are algorithmic evidence candidates and are not clinically confirmed findings.</i></p></div>
+<div class="card"><h2>Anatomical Evidence</h2>
+<table><tr><th>Structure</th><th>Status</th></tr><tr><td>optic_disc</td><td>UNKNOWN</td></tr><tr><td>fovea</td><td>UNKNOWN</td></tr><tr><td>vessels</td><td>unavailable</td></tr></table></div>
+<div class="card"><h2>Explainability</h2>
+<p>Consistency: <b>UNKNOWN</b></p><p>Figure unavailable.</p></div>
+<div class="card"><h2>Workflow Recommendation</h2>
+<p><b>UNGRADABLE</b> (NORMAL)</p>
+<p>Image recapture recommended.</p><ul><li><b>IMAGE_UNGRADABLE</b>: Image quality is insufficient for reliable automated screening.</li><li><b>RECAPTURE_REQUIRED</b>: Image recapture is recommended.</li></ul>
+<p>Safety flags raised: image_quality_issue</p></div>
+<div class="card"><h2>Limitations</h2><ul><li>This is an AI-assisted screening tool.</li><li>It is not a standalone diagnostic system.</li><li>Algorithmic lesion evidence is not clinically confirmed.</li><li>Confidence values do not represent clinical certainty.</li><li>Dataset performance may not generalize to rural clinical deployment.</li><li>Human review remains necessary for escalated/uncertain cases.</li></ul></div>
+</body></html>

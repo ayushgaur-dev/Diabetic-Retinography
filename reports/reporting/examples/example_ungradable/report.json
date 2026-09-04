@@ -1,0 +1,169 @@
+{
+  "generator_version": "1.0.0",
+  "missing_fields": [],
+  "report_version": "1.0.0",
+  "sections": {
+    "anatomy": {
+      "sentences": [
+        "Optic disc localization unavailable.",
+        "Fovea localization unavailable.",
+        "Vessel map: unavailable."
+      ],
+      "structures": [
+        {
+          "confidence": null,
+          "region": null,
+          "status": "UNKNOWN",
+          "structure": "optic_disc"
+        },
+        {
+          "confidence": null,
+          "region": null,
+          "status": "UNKNOWN",
+          "structure": "fovea"
+        },
+        {
+          "confidence": null,
+          "region": null,
+          "status": "unavailable",
+          "structure": "vessels"
+        }
+      ]
+    },
+    "enhancement": {
+      "operations": [],
+      "result": null,
+      "status": "not attempted (ungradable input)"
+    },
+    "explainability": {
+      "consistency": "UNKNOWN",
+      "consistency_reason": "",
+      "figure": null,
+      "gradcam": {
+        "explained_class": null,
+        "hot_fraction_fov": null,
+        "layer": null
+      },
+      "lesion_agreement": {},
+      "note": "Detected lesion evidence overlapping Grad-CAM regions is spatial agreement, not proof the lesion caused the prediction."
+    },
+    "grading": {
+      "assessed": false,
+      "notice": "DR grade was not assessed (grading blocked or unavailable)."
+    },
+    "image_id": "SYNTHETIC-EXAMPLE-UNGRADABLE",
+    "lesions": {
+      "lesions": [
+        {
+          "candidate_count": 0,
+          "confidence": null,
+          "evidence_area": null,
+          "lesion_type": "microaneurysm",
+          "sentence": "No microaneurysm evidence detected by this heuristic module. This does NOT mean the patient definitely has no microaneurysm.",
+          "status": "UNKNOWN",
+          "top_candidates": []
+        },
+        {
+          "candidate_count": 0,
+          "confidence": null,
+          "evidence_area": null,
+          "lesion_type": "hemorrhage",
+          "sentence": "No hemorrhage evidence detected by this heuristic module. This does NOT mean the patient definitely has no hemorrhage.",
+          "status": "UNKNOWN",
+          "top_candidates": []
+        },
+        {
+          "candidate_count": 0,
+          "confidence": null,
+          "evidence_area": null,
+          "lesion_type": "hard_exudate",
+          "sentence": "No hard exudate evidence detected by this heuristic module. This does NOT mean the patient definitely has no hard exudate.",
+          "status": "UNKNOWN",
+          "top_candidates": []
+        },
+        {
+          "candidate_count": 0,
+          "confidence": null,
+          "evidence_area": null,
+          "lesion_type": "soft_exudate",
+          "sentence": "No soft exudate evidence detected by this heuristic module. This does NOT mean the patient definitely has no soft exudate.",
+          "status": "UNKNOWN",
+          "top_candidates": []
+        }
+      ],
+      "limitation": "Lesion findings are algorithmic evidence candidates and are not clinically confirmed findings."
+    },
+    "limitations": [
+      "This is an AI-assisted screening tool.",
+      "It is not a standalone diagnostic system.",
+      "Algorithmic lesion evidence is not clinically confirmed.",
+      "Confidence values do not represent clinical certainty.",
+      "Dataset performance may not generalize to rural clinical deployment.",
+      "Human review remains necessary for escalated/uncertain cases."
+    ],
+    "provenance": {
+      "calibration": "Temperature scaling",
+      "explainability": "Grad-CAM + explicit evidence",
+      "generator": "deterministic (no LLM, no network)",
+      "model": "EfficientNetB0 (5-class DR grading)",
+      "temperature": 0.9542,
+      "triage": "deterministic rule engine (evidence_triage_v1)"
+    },
+    "quality": {
+      "components": {
+        "contrast": "UNKNOWN",
+        "exposure": "UNKNOWN",
+        "field_of_view": "UNKNOWN",
+        "focus": "BAD",
+        "illumination": "UNKNOWN",
+        "retinal_coverage": "UNKNOWN"
+      },
+      "notice": "Image quality is UNGRADABLE: no DR grade can be trusted for this image; recapture is recommended.",
+      "reasons": [
+        "focus: Image appears out of focus."
+      ],
+      "recapture_feedback": [
+        "Image appears out of focus. Keep the camera steady and recapture.",
+        "This image cannot be graded. Please recapture before screening."
+      ],
+      "score": 0.12,
+      "status": "UNGRADABLE"
+    },
+    "referable": {
+      "classification": "NON_REFERABLE",
+      "definition": "Referable DR = predicted Grade >= 2; score = P2+P3+P4.",
+      "score": null,
+      "sentence": "Referable probability: unavailable (decision threshold 0.7). Screening classification: NON_REFERABLE.",
+      "threshold": 0.7,
+      "threshold_note": "Threshold preserved from Phase 5; not claimed clinically validated."
+    },
+    "summary": {
+      "calibrated_confidence": null,
+      "image_quality": "UNGRADABLE",
+      "model_prediction": "not assessed",
+      "predicted_grade": null,
+      "priority": "NORMAL",
+      "referable_probability": null,
+      "workflow_recommendation": "UNGRADABLE"
+    },
+    "triage": {
+      "decision": "UNGRADABLE",
+      "explanation": "Decision: UNGRADABLE",
+      "priority": "NORMAL",
+      "reason_codes": [
+        "IMAGE_UNGRADABLE",
+        "RECAPTURE_REQUIRED"
+      ],
+      "reason_translations": {
+        "IMAGE_UNGRADABLE": "Image quality is insufficient for reliable automated screening.",
+        "RECAPTURE_REQUIRED": "Image recapture is recommended."
+      },
+      "safety_flags": {
+        "image_quality_issue": true
+      },
+      "workflow": "Image recapture recommended."
+    },
+    "warnings": []
+  },
+  "status": "COMPLETE"
+}

@@ -1,0 +1,52 @@
+{
+  "_comment": "SIH26038 Phase 9 — reporting config. All user-facing wording lives here, not in Python. Screening-support language only; never diagnostic.",
+  "report_version": "1.0.0",
+  "generator_version": "1.0.0",
+  "grade_labels": {"0": "No DR", "1": "Mild", "2": "Moderate", "3": "Severe", "4": "Proliferative"},
+  "reason_translations": {
+    "IMAGE_UNGRADABLE": "Image quality is insufficient for reliable automated screening.",
+    "RECAPTURE_REQUIRED": "Image recapture is recommended.",
+    "HIGH_DR_SEVERITY": "Predicted DR severity meets the urgent-review screening criterion.",
+    "REFERABLE_DR_PREDICTION": "Predicted DR severity meets the referable screening criterion.",
+    "HEMORRHAGE_EVIDENCE": "Hemorrhage candidate regions were detected by the lesion-evidence module.",
+    "HARD_EXUDATE_EVIDENCE": "Hard-exudate candidate regions were detected by the lesion-evidence module.",
+    "MICROANEURYSM_EVIDENCE": "Microaneurysm candidate regions were detected by the lesion-evidence module.",
+    "SOFT_EXUDATE_EVIDENCE": "Soft-exudate candidate regions were detected by the lesion-evidence module.",
+    "MULTIPLE_LESION_TYPES": "Candidate regions of more than one lesion type were detected.",
+    "LOW_MODEL_CONFIDENCE": "Calibrated model confidence is below the review threshold.",
+    "EVIDENCE_MODEL_CONFLICT": "Explicit evidence and model prediction show limited spatial agreement; human review is recommended.",
+    "CONFLICT_ESCALATED_TO_REFER": "Evidence conflict matches a configured escalation pattern.",
+    "ENHANCEMENT_FAILED": "Borderline image quality could not be enhanced; grading was withheld.",
+    "INVALID_INPUT": "Screening inputs failed validation checks.",
+    "PROCESSING_FAILURE": "A processing component reported a failure.",
+    "NON_REFERABLE_PREDICTION": "Predicted DR severity is below the referable screening criterion.",
+    "BORDERLINE_IMAGE_ENHANCED": "Borderline image quality was enhanced before grading.",
+    "BORDERLINE_IMAGE_UNENHANCED": "Borderline image quality was graded without enhancement."
+  },
+  "workflow_text": {
+    "UNGRADABLE": "Image recapture recommended.",
+    "ROUTINE": "Routine screening workflow recommended.",
+    "REFER": "Specialist review recommended.",
+    "URGENT_REVIEW": "Urgent specialist review recommended.",
+    "TECHNICAL_REVIEW": "Human review recommended."
+  },
+  "lesion_limitation": "Lesion findings are algorithmic evidence candidates and are not clinically confirmed findings.",
+  "limitations": [
+    "This is an AI-assisted screening tool.",
+    "It is not a standalone diagnostic system.",
+    "Algorithmic lesion evidence is not clinically confirmed.",
+    "Confidence values do not represent clinical certainty.",
+    "Dataset performance may not generalize to rural clinical deployment.",
+    "Human review remains necessary for escalated/uncertain cases."
+  ],
+  "provenance": {
+    "model": "EfficientNetB0 (5-class DR grading)",
+    "calibration": "Temperature scaling",
+    "temperature": 0.9542,
+    "triage": "deterministic rule engine (evidence_triage_v1)",
+    "explainability": "Grad-CAM + explicit evidence",
+    "generator": "deterministic (no LLM, no network)"
+  },
+  "formatting": {"probability_decimals": 4, "confidence_decimals": 4},
+  "banned_phrases": ["has diabetic retinopathy", "confirmed hemorrhage", "confirmed microaneurysm", "confirmed exudate", "clinically certain", "clinical certainty", "diagnosed", "diagnosis", "prescribe", "prescription", "treatment recommendation"]
+}

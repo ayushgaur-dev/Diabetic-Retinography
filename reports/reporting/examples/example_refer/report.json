@@ -1,0 +1,234 @@
+{
+  "generator_version": "1.0.0",
+  "missing_fields": [],
+  "report_version": "1.0.0",
+  "sections": {
+    "anatomy": {
+      "sentences": [
+        "Optic disc: detected (localization confidence 0.74).",
+        "Fovea: detected (localization confidence 0.66).",
+        "Vessel map: available."
+      ],
+      "structures": [
+        {
+          "confidence": 0.74,
+          "region": [
+            900,
+            1100
+          ],
+          "status": "DETECTED",
+          "structure": "optic_disc"
+        },
+        {
+          "confidence": 0.66,
+          "region": [
+            2100,
+            1500
+          ],
+          "status": "DETECTED",
+          "structure": "fovea"
+        },
+        {
+          "confidence": null,
+          "region": null,
+          "status": "available",
+          "structure": "vessels"
+        }
+      ]
+    },
+    "enhancement": {
+      "after": "GOOD",
+      "before": "BORDERLINE",
+      "note": "Enhancement adjusts image quality; it does not change the screening assessment.",
+      "operations": [
+        "clahe",
+        "denoise"
+      ],
+      "status": "applied"
+    },
+    "explainability": {
+      "consistency": "SUPPORTIVE",
+      "consistency_reason": "high spatial agreement (overlap 0.62)",
+      "figure": null,
+      "gradcam": {
+        "explained_class": null,
+        "hot_fraction_fov": 0.31,
+        "layer": "top_activation"
+      },
+      "lesion_agreement": {
+        "hemorrhage": 0.62
+      },
+      "note": "Detected lesion evidence overlapping Grad-CAM regions is spatial agreement, not proof the lesion caused the prediction."
+    },
+    "grading": {
+      "assessed": true,
+      "calibrated_confidence": 0.81,
+      "calibrated_probabilities": [
+        0.05,
+        0.12,
+        0.74,
+        0.07,
+        0.02
+      ],
+      "confidence_sentence": "Calibrated model confidence: 0.8100. Calibrated confidence is not clinical certainty.",
+      "grade_label": "Moderate",
+      "predicted_grade": 2,
+      "raw_probabilities": [
+        0.06,
+        0.13,
+        0.72,
+        0.07,
+        0.02
+      ],
+      "sentence": "The model predicted Moderate diabetic-retinopathy severity (Grade 2)."
+    },
+    "image_id": "SYNTHETIC-EXAMPLE-001",
+    "lesions": {
+      "lesions": [
+        {
+          "candidate_count": 0,
+          "confidence": 0.0,
+          "evidence_area": 0,
+          "lesion_type": "microaneurysm",
+          "sentence": "No microaneurysm evidence detected by this heuristic module. This does NOT mean the patient definitely has no microaneurysm.",
+          "status": "NOT_DETECTED",
+          "top_candidates": []
+        },
+        {
+          "candidate_count": 4,
+          "confidence": 0.8,
+          "evidence_area": 1500,
+          "lesion_type": "hemorrhage",
+          "sentence": "Hemorrhage evidence: DETECTED, 4 candidate regions detected by the heuristic module.",
+          "status": "DETECTED",
+          "top_candidates": [
+            {
+              "bbox": [
+                200,
+                200,
+                260,
+                240
+              ],
+              "centroid": [
+                230,
+                220
+              ],
+              "score": 0.8
+            }
+          ]
+        },
+        {
+          "candidate_count": 3,
+          "confidence": 0.7,
+          "evidence_area": 900,
+          "lesion_type": "hard_exudate",
+          "sentence": "Hard exudate evidence: DETECTED, 3 candidate regions detected by the heuristic module.",
+          "status": "DETECTED",
+          "top_candidates": [
+            {
+              "bbox": [
+                100,
+                100,
+                140,
+                130
+              ],
+              "centroid": [
+                120,
+                115
+              ],
+              "score": 0.7
+            }
+          ]
+        },
+        {
+          "candidate_count": 0,
+          "confidence": 0.0,
+          "evidence_area": 0,
+          "lesion_type": "soft_exudate",
+          "sentence": "No soft exudate evidence detected by this heuristic module. This does NOT mean the patient definitely has no soft exudate.",
+          "status": "NOT_DETECTED",
+          "top_candidates": []
+        }
+      ],
+      "limitation": "Lesion findings are algorithmic evidence candidates and are not clinically confirmed findings."
+    },
+    "limitations": [
+      "This is an AI-assisted screening tool.",
+      "It is not a standalone diagnostic system.",
+      "Algorithmic lesion evidence is not clinically confirmed.",
+      "Confidence values do not represent clinical certainty.",
+      "Dataset performance may not generalize to rural clinical deployment.",
+      "Human review remains necessary for escalated/uncertain cases."
+    ],
+    "provenance": {
+      "calibration": "Temperature scaling",
+      "explainability": "Grad-CAM + explicit evidence",
+      "generator": "deterministic (no LLM, no network)",
+      "model": "EfficientNetB0 (5-class DR grading)",
+      "temperature": 0.9542,
+      "triage": "deterministic rule engine (evidence_triage_v1)"
+    },
+    "quality": {
+      "components": {
+        "contrast": "UNKNOWN",
+        "exposure": "UNKNOWN",
+        "field_of_view": "GOOD",
+        "focus": "BORDERLINE",
+        "illumination": "UNKNOWN",
+        "retinal_coverage": "UNKNOWN"
+      },
+      "reasons": [
+        "focus: Focus is below the preferred level."
+      ],
+      "recapture_feedback": [],
+      "score": 0.62,
+      "status": "BORDERLINE"
+    },
+    "referable": {
+      "classification": "REFERABLE",
+      "definition": "Referable DR = predicted Grade >= 2; score = P2+P3+P4.",
+      "score": 0.83,
+      "sentence": "Referable probability: 0.8300 (decision threshold 0.7). Screening classification: REFERABLE.",
+      "threshold": 0.7,
+      "threshold_note": "Threshold preserved from Phase 5; not claimed clinically validated."
+    },
+    "summary": {
+      "calibrated_confidence": 0.81,
+      "image_quality": "BORDERLINE",
+      "model_prediction": "Moderate (Grade 2)",
+      "predicted_grade": 2,
+      "priority": "HIGH",
+      "referable_probability": 0.83,
+      "workflow_recommendation": "REFER"
+    },
+    "triage": {
+      "decision": "REFER",
+      "explanation": "Decision: REFER",
+      "priority": "HIGH",
+      "reason_codes": [
+        "REFERABLE_DR_PREDICTION",
+        "HEMORRHAGE_EVIDENCE",
+        "HARD_EXUDATE_EVIDENCE"
+      ],
+      "reason_translations": {
+        "HARD_EXUDATE_EVIDENCE": "Hard-exudate candidate regions were detected by the lesion-evidence module.",
+        "HEMORRHAGE_EVIDENCE": "Hemorrhage candidate regions were detected by the lesion-evidence module.",
+        "REFERABLE_DR_PREDICTION": "Predicted DR severity meets the referable screening criterion."
+      },
+      "safety_flags": {
+        "evidence_conflict": false,
+        "image_quality_issue": true,
+        "missing_anatomical_landmarks": false,
+        "missing_lesion_evidence": false,
+        "missing_vessel_evidence": false,
+        "model_uncertainty": false,
+        "processing_failure": false
+      },
+      "workflow": "Specialist review recommended."
+    },
+    "warnings": [
+      "BORDERLINE_IMAGE_ENHANCED: graded enhanced input."
+    ]
+  },
+  "status": "COMPLETE"
+}
