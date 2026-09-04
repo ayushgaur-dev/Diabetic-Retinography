@@ -16,10 +16,14 @@ export default function Timeline({ stage, done }: { stage: string | null; done: 
           <li key={s} className="flex items-center gap-4">
             <span
               className={`stage-dot h-3 w-3 rounded-full border ${
-                passed ? "border-arterial bg-arterial" : isActive ? "border-arterial" : "border-ink/30"
+                passed
+                  ? "border-[#ff5a4e] bg-[#ff5a4e]"
+                  : isActive
+                    ? "live border-[#ff5a4e]"
+                    : "border-white/25"
               }`}
             />
-            <span className={`text-sm uppercase tracking-[0.2em] ${passed || isActive ? "" : "text-ink/40"}`}>
+            <span className={`text-sm uppercase tracking-[0.2em] ${passed || isActive ? "text-white" : "text-white/35"}`}>
               {STAGE_LABELS[s]}
             </span>
           </li>

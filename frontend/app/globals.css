@@ -2,18 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
-.tech-grid {
-  background-image:
-    linear-gradient(to right, rgb(0 0 0 / 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(0 0 0 / 0.05) 1px, transparent 1px);
-  background-size: 56px 56px;
+:root {
+  --void: #08080c;
+  --ink: #f2ede4;
+  --arterial: #ff5a4e;
+  --amber: #e8a33d;
 }
-.tech-grid-dark {
-  background-image:
-    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
-  background-size: 56px 56px;
+
+html {
+  scroll-behavior: smooth;
 }
+
+body {
+  background: var(--void);
+}
+
+/* ---------- liquid glass ---------- */
+.glass {
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.03));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+.glass-deep {
+  background: linear-gradient(135deg, rgb(20 18 26 / 0.72), rgb(10 10 14 / 0.85));
+  backdrop-filter: blur(22px) saturate(130%);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+/* ---------- ambient orbs ---------- */
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, -40px) scale(1.15); }
+}
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+  animation: drift 14s ease-in-out infinite;
+}
+.orb-red { background: radial-gradient(circle, rgb(255 90 78 / 0.35), transparent 70%); }
+.orb-amber { background: radial-gradient(circle, rgb(232 163 61 / 0.22), transparent 70%); }
+
+/* ---------- reveals ---------- */
 .reveal {
   opacity: 0;
   transform: translateY(28px);
@@ -23,20 +58,81 @@
   opacity: 1;
   transform: none;
 }
+
+/* ---------- loading shimmer ---------- */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.04) 25%, rgb(255 255 255 / 0.14) 50%, rgb(255 255 255 / 0.04) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+@keyframes scanline {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--arterial), transparent);
+  box-shadow: 0 0 24px 4px rgb(255 90 78 / 0.5);
+  animation: scanline 2.6s ease-in-out infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.pulse-ring {
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+/* ---------- misc ---------- */
+.tech-grid-dark {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+.stage-dot {
+  transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+}
+.stage-dot.live {
+  box-shadow: 0 0 12px 2px rgb(255 90 78 / 0.8);
+}
+.viewer-fade {
+  transition: opacity 0.45s ease;
+}
+.grade-glow {
+  text-shadow: 0 0 60px rgb(255 90 78 / 0.45);
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.rise-in {
+  animation: rise-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal {
     opacity: 1;
     transform: none;
     transition: none;
   }
+  .orb, .shimmer, .scanline, .pulse-ring {
+    animation: none !important;
+  }
+  .rise-in {
+    animation-duration: 0.01ms !important;
+  }
   * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-.stage-dot {
-  transition: background-color 0.5s ease, border-color 0.5s ease;
-}
-.viewer-fade {
-  transition: opacity 0.45s ease;
 }
