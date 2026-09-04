@@ -61,20 +61,30 @@ def _now_ms(t0):
 
 
 def run_screening(rgb, grade_fn=None, temperature=0.9542, stages=None,
-                  calibrator=None):
+                  calibrator=None, on_stage=None):
     """Run the full screening pipeline. rgb: uint8 RGB array.
 
     grade_fn(batch224) -> probabilities list (injected for tests; default
     uses the frozen EfficientNet via src.evaluation.inference).
     calibrator(probs) -> calibrated list (default: temperature scaling).
+    on_stage(name) -> optional progress hook (UI polling only; default
+    None preserves exact behavior).
     Returns a plain-dict result with numbers + display-sized arrays.
     """
     from src.preprocessing.enhancement_pipeline import enhance_image
     from src.quality.quality_pipeline import assess_image
 
+    def stage(name):
+        if on_stage is not None:
+            try:
+                on_stage(name)
+            except Exception:
+                pass
+
     t0 = time.perf_counter()
     stages = {"full_evidence": True, **(stages or {})}
     out = {"errors": {}, "timings_ms": {}, "warnings": []}
+    stage("quality")
 
     # --- quality (224px reference scale, as calibrated) ---
     t1 = time.perf_counter()
@@ -100,6 +110,7 @@ def run_screening(rgb, grade_fn=None, temperature=0.9542, stages=None,
     # --- enhancement for BORDERLINE ---
     work224, enh_status, enh_info = q224, "none", None
     if out["quality"].get("status") == "BORDERLINE":
+        stage("enhancement")
         t1 = time.perf_counter()
         try:
             eres, _ = enhance_image(q224)
@@ -123,6 +134,7 @@ def run_screening(rgb, grade_fn=None, temperature=0.9542, stages=None,
         return out
 
     # --- grading (exactly once) ---
+    stage("grading")
     t1 = time.perf_counter()
     try:
         probs = [float(v) for v in grade_fn(work224)]
@@ -154,6 +166,7 @@ def run_screening(rgb, grade_fn=None, temperature=0.9542, stages=None,
     evidence = {"vessel": None, "disc": None, "fovea": None,
                 "lesions": None, "explainability": None, "gradcam": None}
     if stages["full_evidence"]:
+        stage("evidence")
         evidence = _full_evidence(rgb, out, grade, probs)
         out["warnings"] += evidence.pop("warnings", [])
     else:
@@ -161,6 +174,7 @@ def run_screening(rgb, grade_fn=None, temperature=0.9542, stages=None,
     out.update(evidence)
 
     # --- triage (verbatim Phase 8, never reimplemented) ---
+    stage("triage")
     t1 = time.perf_counter()
     try:
         from src.triage.pipeline import triage_from_phases
