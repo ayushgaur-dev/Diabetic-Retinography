@@ -63,9 +63,10 @@ def test_balanced_control_flow():
              ("while", "end"), ("switch", "end"), ("try", "end")]
     for rel in EXPECTED:
         text = (MATLAB / rel).read_text()
-        code = "\n".join(l.split("%")[0] for l in text.splitlines())
-        code = re.sub(r"'[^'\n]*'", "''", code)  # drop string literals
-        code = re.sub(r"[\(\{]\s*end\b", "(IDX", code)  # indexing, not blocks
+        # Strings first (%s formats contain %), then comments, then indexing.
+        code = re.sub(r"'[^'\n]*'", "''", text)
+        code = "\n".join(l.split("%")[0] for l in code.splitlines())
+        code = re.sub(r"[\(\{:]\s*end\b", "(IDX", code)  # indexing, not blocks
         toks = re.findall(r"\b(function|for|if|while|switch|try|end|elseif|else|catch)\b",
                           code)
         depth = 0
