@@ -1,0 +1,35 @@
+{
+  "n": 550,
+  "distribution": {
+    "TECHNICAL_REVIEW": 353,
+    "REFER": 50,
+    "UNGRADABLE": 74,
+    "URGENT_REVIEW": 54,
+    "ROUTINE": 19
+  },
+  "reason_frequencies": {
+    "ENHANCEMENT_FAILED": 345,
+    "RECAPTURE_REQUIRED": 419,
+    "REFERABLE_DR_PREDICTION": 104,
+    "LOW_MODEL_CONFIDENCE": 97,
+    "IMAGE_UNGRADABLE": 74,
+    "HIGH_DR_SEVERITY": 54,
+    "NON_REFERABLE_PREDICTION": 19
+  },
+  "subset_n": 30,
+  "subset_distribution": {
+    "REFER": 1,
+    "TECHNICAL_REVIEW": 21,
+    "UNGRADABLE": 6,
+    "URGENT_REVIEW": 2
+  },
+  "safety": {
+    "referable_false_negatives": 0,
+    "referable_fn_ids": [],
+    "severe_undercalls_routine": 0,
+    "severe_ids": [],
+    "escalated_referable_frac": 0.3946
+  },
+  "runtime_s": 1020.8,
+  "note": "Full run grades without lesion evidence (recorded missing); subset adds full evidence. Descriptive workflow statistics."
+}

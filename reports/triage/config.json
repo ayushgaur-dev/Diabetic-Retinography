@@ -1,0 +1,51 @@
+{
+  "decisions": [
+    "UNGRADABLE",
+    "ROUTINE",
+    "REFER",
+    "URGENT_REVIEW",
+    "TECHNICAL_REVIEW"
+  ],
+  "priorities": {
+    "UNGRADABLE": "NORMAL",
+    "ROUTINE": "LOW",
+    "REFER": "HIGH",
+    "URGENT_REVIEW": "CRITICAL",
+    "TECHNICAL_REVIEW": "HIGH"
+  },
+  "referable_grade_min": 2,
+  "referable_threshold": 0.7,
+  "severe_grade_threshold": 3,
+  "low_confidence_threshold": 0.6,
+  "rule_priority": [
+    "INVALID_INPUT",
+    "UNGRADABLE",
+    "ENHANCEMENT_FAILED",
+    "PROCESSING_FAILURE",
+    "HIGH_SEVERITY",
+    "REFERABLE",
+    "EVIDENCE_CONFLICT",
+    "LOW_CONFIDENCE",
+    "ROUTINE"
+  ],
+  "evidence": {
+    "strong_min_candidates": {
+      "microaneurysm": 5,
+      "hemorrhage": 3,
+      "hard_exudate": 3,
+      "soft_exudate": 2
+    },
+    "conflict_action": "TECHNICAL_REVIEW",
+    "escalate_patterns_to_refer": [],
+    "comment": "Per-type strong-evidence candidate floors. Conflict = grade<=1 (and referable score below threshold) with any strong type. Default conflict action is human review (TECHNICAL_REVIEW); listed patterns may escalate to REFER only if configured."
+  },
+  "optional_evidence": [
+    "vessels",
+    "optic_disc",
+    "fovea",
+    "lesions",
+    "gradcam"
+  ],
+  "temperature": 0.9542,
+  "_comment": "SIH26038 Phase 8 \u2014 screening triage engine. Deterministic workflow recommendations (NOT diagnoses). Thresholds are ENGINEERING HEURISTICS unless noted. Legacy provenance: low_confidence 0.60 adapted from src/rules/triage.py CONFIDENCE_THRESHOLD (raw-softmax era) to calibrated confidence; grade mapping mirrors legacy BASE_RULES actions."
+}
