@@ -101,7 +101,7 @@ export default function Screen() {
               <input type="file" accept="image/png,image/jpeg" className="hidden"
                 onChange={(e) => onFile(e.target.files?.[0])} />
             </label>
-            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-ink/50">PNG · JPEG · up to 15 MB · no patient data stored</p>
+            <p className="mt-4 text-xs uppercase tracking-[0.2em] text-ink/50">PNG · JPEG · WEBP · up to 15 MB · no patient data stored</p>
           </div>
           {preview && (
             <div className="mt-8 grid gap-8 md:grid-cols-2">

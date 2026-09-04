@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 MAX_BYTES = 15 * 1024 * 1024
-ALLOWED = {"image/png", "image/jpeg", "image/jpg"}
+ALLOWED = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
 
 
 @app.get("/api/health")
