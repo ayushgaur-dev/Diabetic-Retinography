@@ -1,0 +1,62 @@
+{
+  "dataset": {
+    "label_files": [
+      "train_1.csv",
+      "valid.csv",
+      "test.csv"
+    ],
+    "image_dirs": [
+      "train_images",
+      "val_images",
+      "test_images"
+    ],
+    "id_field": "id_code",
+    "grade_field": "diagnosis",
+    "image_extension": ".png",
+    "comment": "APTOS 2019 via Kaggle mirror mariaherrerot/aptos2019 (train_1/valid/test CSVs + nested PNG dirs). Labels combined then re-split by the notebook procedure below; the mirror's own pre-split is NOT trusted."
+  },
+  "split": {
+    "train_frac": 0.7,
+    "temp_test_frac": 0.5,
+    "random_seed": 42,
+    "stratify": true,
+    "comment": "Exact notebook reconstruction (02[6]): 70/30 then 50/50 of temp, stratified, seed 42. test_df is the held-out set (built in notebooks, never evaluated there)."
+  },
+  "referable": {
+    "positive_grade_min": 2,
+    "score_definition": "P2+P3+P4 (sum of predicted probs for grades >= 2)",
+    "comment": "SIH binary task. Targets sensitivity>90% / specificity>85% are TARGETS, not claims."
+  },
+  "decision_threshold": {
+    "default": 0.5,
+    "grid": [
+      0.3,
+      0.35,
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6,
+      0.65,
+      0.7
+    ],
+    "comment": "Default 0.5; grid analysis runs on VALIDATION only, frozen choice applied once to test."
+  },
+  "bootstrap": {
+    "n_resamples": 1000,
+    "seed": 42
+  },
+  "inference": {
+    "image_size": 224,
+    "batch_size": 32
+  },
+  "model_artifact": "models/efficientnetb0_finetuned_patched.keras",
+  "quality_analysis": {
+    "enabled": true
+  },
+  "enhancement_ablation": {
+    "enabled": true,
+    "comment": "BORDERLINE+accepted only; no model change."
+  },
+  "_comment": "SIH26038 Phase 5 \u2014 grading evaluation config. All settings, no magic numbers in Python. Raw softmax is NEVER called calibrated."
+}
