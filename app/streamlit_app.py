@@ -1,488 +1,289 @@
-"""Streamlit demo app — Retinal Screening Triage System (Block 18).
+"""SIH26038 clinician-facing reference UI (Phase 10A).
 
-Two tabs:
-  Screening — upload a fundus image + editable (synthetic-prefilled)
-              intake form, wired through: model -> triage rules -> RAG
-              retrieval -> LLM report generation.
-  Insights  — static model/RAG performance figures, a live summary of
-              cases processed in the current browser session, a link to
-              the full Tableau dashboard, and a minimal EDA sanity view
-              over data/processed/eda_summary.csv.
-
-Not a diagnostic device. Every screen in the Screening tab carries that
-notice — see the disclaimer constant below.
+Integrates Phases 2-9 through app/screening_pipeline.py only. No ML logic
+lives here: quality/enhancement/grading/calibration/anatomy/lesions/
+explainability/triage/reporting all come from their frozen modules.
+Research/decision-support prototype — not a diagnostic device.
 """
 
+import io
 import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import streamlit as st
 from PIL import Image
-from tensorflow.keras.applications.efficientnet import preprocess_input
-from tensorflow.keras.models import load_model as keras_load_model
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.models.gradcam import make_gradcam_heatmap, overlay_gradcam  # noqa: E402
-from src.preprocessing.enhancement_pipeline import enhance_image  # noqa: E402
-from src.quality.quality_pipeline import assess_image  # noqa: E402
-from src.rag.generator import generate_report  # noqa: E402
-from src.rag.indexer import load_index, retrieve  # noqa: E402
-from src.rules.triage import triage_decision  # noqa: E402
+from app.screening_pipeline import (  # noqa: E402
+    content_hash,
+    downscale_for_display,
+    run_screening,
+    set_model_for_gradcam,
+    should_reuse,
+)
+
+GRADE_LABELS = {0: "No DR", 1: "Mild NPDR", 2: "Moderate NPDR",
+                3: "Severe NPDR", 4: "Proliferative DR"}
+
+SAFETY_BANNER = (
+    "Research and decision-support prototype — not a diagnostic device. "
+    "Qualified human review is required. Lesion evidence is not confirmation. "
+    "Calibrated confidence is not clinical certainty. Dataset performance "
+    "does not guarantee deployment performance. Ungradable images require "
+    "recapture/review."
+)
 
 MODEL_PATH = REPO_ROOT / "models" / "efficientnetb0_finetuned_patched.keras"
-SYNTHETIC_INTAKE_PATH = REPO_ROOT / "data" / "synthetic" / "synthetic_intake_demo.csv"
-EDA_SUMMARY_PATH = REPO_ROOT / "data" / "processed" / "eda_summary.csv"
 
-# Static model/RAG performance figures for the Insights tab. Hardcoded,
-# not recomputed live — these are the fine-tuned model's validation-set
-# results (docs/experiments.md, data/processed/confusion_matrix.csv) and
-# the RAG retrieval eval (src/rag/eval_rag.py), not something this app
-# session can regenerate on its own.
-MODEL_QWK = 0.7987
-PER_GRADE_RECALL = {0: 0.952, 1: 0.309, 2: 0.353, 3: 0.690, 4: 0.455}
-RAG_HIT_RATE_AT_3 = 1.00
-RAG_HIT_RATE_AT_1 = 0.778
-TABLEAU_DASHBOARD_URL = (
-    "https://public.tableau.com/app/profile/manu.daza/viz/"
-    "RetinalScreeningTriageSystemFigures/"
-    "RetinalScreeningTriageSystemModelEvaluationDashboard"
-)
-
-IMG_SIZE = 224
-GRADE_LABELS = {
-    0: "No DR",
-    1: "Mild NPDR",
-    2: "Moderate NPDR",
-    3: "Severe NPDR",
-    4: "Proliferative DR",
-}
-
-DEVICE_NOTICE = (
-    "⚠️ This is a triage assistant, not a diagnostic device. "
-    "Every output requires clinician review before being acted on."
-)
-
-FALLBACK_INTAKE_DEFAULTS = {
-    "age": 60.0,
-    "diabetes_years": 10,
-    "hba1c": 7.8,
-    "visual_acuity": 0.75,
-    "spherical_refraction": 0.0,
-}
-
-
-# ---------------------------------------------------------------------------
-# Cached resource loaders — each returns (resource, error_message); error is
-# None on success. Never raises, so the caller always has a graceful path.
-# ---------------------------------------------------------------------------
 
 @st.cache_resource(show_spinner=False)
 def load_vision_model():
     try:
-        return keras_load_model(MODEL_PATH), None
+        from tensorflow.keras.models import load_model as _load
+
+        return _load(str(MODEL_PATH)), None
     except Exception as e:
         return None, str(e)
 
 
-@st.cache_resource(show_spinner=False)
-def load_guideline_index():
-    try:
-        return load_index(), None
-    except Exception as e:
-        return None, str(e)
+def default_grade_fn_factory(model):
+    from tensorflow.keras.applications.efficientnet import preprocess_input
+
+    def grade_fn(arr224):
+        batch = np.expand_dims(preprocess_input(
+            np.asarray(arr224).astype("float32")), 0)
+        return [float(v) for v in model.predict(batch, verbose=0)[0]]
+
+    return grade_fn
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+st.set_page_config(page_title="SIH26038 DR Screening Reference", layout="wide")
+st.title("Explainable DR Screening — Reference UI")
+st.warning(SAFETY_BANNER)
 
-def preprocess_uploaded_image(pil_image):
-    """Resize to 224x224 and apply EfficientNet's preprocess_input — the
-    same preprocessing used in notebooks/03_transfer_learning.ipynb.
-    NOT /255.0 normalisation; using generic normalisation here would
-    reproduce the near-random-performance bug documented in
-    docs/experiments.md.
-    """
-    img = pil_image.convert("RGB").resize((IMG_SIZE, IMG_SIZE))
-    arr = np.array(img).astype("float32")
-    arr = preprocess_input(arr)
-    return np.expand_dims(arr, axis=0)
+st.header("1. Image upload")
+uploaded = st.file_uploader("Fundus photograph", type=["png", "jpg", "jpeg"])
+full_evidence = st.checkbox("Full evidence workup (vessels, landmarks, lesions, "
+                            "explainability — slower)", value=True)
+run = st.button("Run screening", type="primary")
 
-
-def pick_synthetic_intake_defaults():
-    """One random row from the synthetic intake CSV, as a plain dict.
-    Falls back to fixed values (with an on-screen note) if the CSV is
-    missing rather than crashing the app.
-    """
-    try:
-        df = pd.read_csv(SYNTHETIC_INTAKE_PATH)
-        row = df.sample(1).iloc[0]
-        return {
-            "age": float(row["age"]),
-            "diabetes_years": int(row["diabetes_years"]),
-            "hba1c": float(row["hba1c"]),
-            "visual_acuity": float(row["visual_acuity"]),
-            "spherical_refraction": float(row["spherical_refraction"]),
-        }, None
-    except Exception as e:
-        return dict(FALLBACK_INTAKE_DEFAULTS), str(e)
-
-
-def build_retrieval_query(predicted_grade, action):
-    """No free-text question exists in this flow (unlike test_retrieval.py
-    / eval_rag.py's hand-written queries) — this builds one from the
-    triage outcome itself, so retrieval still has something concrete to
-    search against. A design choice, not something the spec dictated.
-    """
-    return (
-        f"ICDRSS grade {predicted_grade} diabetic retinopathy: guideline "
-        f"criteria, recommended follow-up interval, and referral criteria "
-        f"relevant to a {action} decision."
-    )
-
-
-# ---------------------------------------------------------------------------
-# Page
-# ---------------------------------------------------------------------------
-
-st.set_page_config(page_title="Retinal Screening Triage", layout="wide")
-st.title("Retinal Screening Triage System")
-
-tab_screening, tab_insights = st.tabs(["Screening", "Insights"])
-
-with tab_screening:
-    st.warning(DEVICE_NOTICE)
-
-    st.subheader("Patient intake")
-    st.caption(
-        "SYNTHETIC DATA — DEMONSTRATION ONLY. Pre-filled from a random row of "
-        "data/synthetic/synthetic_intake_demo.csv (not a real patient). "
-        "Edit any field freely."
-    )
-
-    if "intake_defaults" not in st.session_state:
-        defaults, load_error = pick_synthetic_intake_defaults()
-        st.session_state.intake_defaults = defaults
-        st.session_state.intake_defaults_error = load_error
-    defaults = st.session_state.intake_defaults
-
-    if st.session_state.intake_defaults_error:
-        st.info(
-            f"Could not load synthetic_intake_demo.csv "
-            f"({st.session_state.intake_defaults_error}); using fixed "
-            f"fallback defaults instead."
-        )
-
-    col1, col2 = st.columns(2)
-    with col1:
-        age = st.number_input("Age", min_value=18, max_value=90, value=int(round(defaults["age"])))
-        diabetes_years = st.number_input(
-            "Years since diabetes diagnosis", min_value=0, max_value=80,
-            value=int(defaults["diabetes_years"]),
-        )
-        hba1c = st.number_input(
-            "HbA1c (%)", min_value=4.0, max_value=15.0,
-            value=float(defaults["hba1c"]), step=0.1,
-        )
-    with col2:
-        visual_acuity = st.number_input(
-            "Visual acuity (decimal, 1.0 = normal)", min_value=0.0, max_value=1.0,
-            value=float(defaults["visual_acuity"]), step=0.01,
-        )
-        spherical_refraction = st.number_input(
-            "Spherical refraction (D)", min_value=-20.0, max_value=10.0,
-            value=float(defaults["spherical_refraction"]), step=0.25,
-        )
-
-    st.caption(
-        "Note: only HbA1c, diabetes duration, and spherical refraction "
-        "currently feed the rule engine's patient modifiers "
-        "(src/rules/triage.py). Age and visual acuity are captured for "
-        "clinical context but not yet modelled there."
-    )
-
-    uploaded_file = st.file_uploader("Upload fundus photograph", type=["png", "jpg", "jpeg"])
-
-    if st.button("Generate Report", type="primary"):
-        if uploaded_file is None:
-            st.warning("Please upload a fundus image before generating a report.")
-        else:
-            image = Image.open(uploaded_file)
-
-            # Phase 2/3 quality gate — runs BEFORE inference. UNGRADABLE
-            # blocks the DR classifier; BORDERLINE is adaptively enhanced
-            # and reassessed (Phase 3); GOOD passes through untouched.
-            # Model preprocessing (resize + EfficientNet preprocess_input)
-            # is applied exactly once, downstream, to whichever image the
-            # gate selects (original or accepted-enhanced).
-            quality_array = np.array(image.convert("RGB").resize((IMG_SIZE, IMG_SIZE)))
-            try:
-                quality_result, _quality_info = assess_image(quality_array)
-            except Exception as e:
-                st.error(f"Quality assessment failed: {e}")
-                st.stop()
-            inference_array = quality_array  # default: original image
-            if quality_result.status == "UNGRADABLE":
-                st.error(
-                    "Image quality is UNGRADABLE — DR grading was NOT performed. "
-                    "Please recapture the image."
-                )
-                for msg in quality_result.recapture_feedback:
-                    st.write(f"- {msg}")
-                st.warning(DEVICE_NOTICE)
-                st.stop()
-            elif quality_result.status == "BORDERLINE":
-                try:
-                    enh_result, _enh_info = enhance_image(quality_array)
-                except Exception as e:
-                    st.error(f"Enhancement failed: {e}")
-                    st.stop()
-                if enh_result.enhancement_successful:
-                    inference_array = enh_result.enhanced_image
-                    st.success(
-                        "BORDERLINE image enhanced and reassessed: "
-                        f"{enh_result.before_quality['status']} → "
-                        f"{enh_result.after_quality['status']} "
-                        f"({', '.join(enh_result.operations_applied)}). Grading "
-                        "ran on the enhanced image."
-                    )
-                else:
-                    st.error(
-                        "Enhancement did not rescue image quality — DR grading "
-                        "was NOT performed. Please recapture the image."
-                    )
-                    for w in enh_result.warnings:
-                        st.caption(f"- {w}")
-                    st.warning(DEVICE_NOTICE)
-                    st.stop()
-            else:
-                st.caption(
-                    f"Image quality: GOOD (score {quality_result.overall_score:.2f})."
-                )
-
-            model, model_error = load_vision_model()
+if uploaded is not None:
+    raw = uploaded.getvalue()
+    ihash = content_hash(raw)
+    st.caption(f"Image SHA-256: `{ihash[:16]}…` ({len(raw) // 1024} KB). "
+               "No patient metadata collected; nothing is persisted.")
+    rgb = np.array(Image.open(io.BytesIO(raw)).convert("RGB"))
+    st.image(downscale_for_display(rgb), caption="Uploaded fundus photograph",
+             width=420)
+    if st.session_state.get("case_hash") != ihash:
+        st.session_state.pop("case", None)  # new image invalidates stale results
+        st.session_state.pop("report", None)
+        st.session_state["case_hash"] = ihash
+    if run or should_reuse(st.session_state.get("case_hash"), ihash,
+                           "case" in st.session_state):
+        if "case" not in st.session_state:
+            model, merr = load_vision_model()
             if model is None:
-                st.error(
-                    f"Could not load the vision model from `{MODEL_PATH}`. "
-                    f"Details: {model_error}"
-                )
+                st.error(f"Model unavailable: {merr}")
                 st.stop()
+            set_model_for_gradcam(model)
+            with st.spinner("Running screening pipeline (this can take a few minutes "
+                            "with full evidence)…"):
+                st.session_state["case"] = run_screening(
+                    rgb, grade_fn=default_grade_fn_factory(model),
+                    stages={"full_evidence": full_evidence})
+                st.session_state["case_rgb"] = downscale_for_display(rgb)
+        case = st.session_state["case"]
+        disp = st.session_state.get("case_rgb", downscale_for_display(rgb))
 
-            try:
-                # inference_array is the gate-selected image: original (GOOD)
-                # or accepted-enhanced (BORDERLINE rescued). Model
-                # preprocessing runs exactly once, here.
-                preprocessed = preprocess_uploaded_image(
-                    Image.fromarray(inference_array)
-                )
-                probs = model.predict(preprocessed, verbose=0)[0]
-                predicted_grade = int(np.argmax(probs))
-                confidence = float(np.max(probs))
-            except Exception as e:
-                st.error(f"Model inference failed: {e}")
-                st.stop()
+        st.header("2. Quality gate")
+        q = case.get("quality", {})
+        st.subheader(f"Quality: {q.get('status', '?')}")
+        comps = {k: (v or {}).get("status", "?") for k, v in q.items()
+                 if isinstance(v, dict) and "status" in v}
+        if comps:
+            st.table([{"component": k, "status": v} for k, v in comps.items()])
+        for r in q.get("reasons", []) or []:
+            st.write(f"- {r}")
+        for m in q.get("recapture_feedback", []) or []:
+            st.warning(m)
+        if case.get("blocked"):
+            st.error(f"Screening stopped: {case.get('blocked_reason')}. "
+                     "No DR grade was produced.")
+            tri = case.get("triage", {})
+            if tri:
+                st.write(f"Routing: **{tri.get('decision')}**")
+        else:
+            if case.get("enhancement_status") == "success":
+                st.header("3. Enhancement (BORDERLINE rescued)")
+                enh = case.get("enhancement") or {}
+                bq, aq = (enh.get("before_quality") or {}), (enh.get("after_quality") or {})
+                st.write(f"Before: **{bq.get('status')}** → After: **{aq.get('status')}**")
+                st.write(f"Operations: {', '.join(enh.get('operations_applied', []))}")
+                st.caption("Enhancement adjusts image quality; it does not recover "
+                           "fundamentally unusable images.")
+            elif q.get("status") == "BORDERLINE":
+                st.caption("BORDERLINE image graded without enhancement.")
 
-            # Grad-CAM: overlay on the gate-selected (non-preprocessed) image
-            # resized to IMG_SIZE, not the EfficientNet-preprocessed
-            # tensor — see src/models/gradcam.py for why that gives a
-            # visually accurate overlay. Failure here degrades to a
-            # warning, not a crash — the report can still proceed without it.
-            gradcam_overlay, gradcam_error = None, None
-            try:
-                heatmap, _ = make_gradcam_heatmap(preprocessed, model)
-                original_resized = inference_array
-                gradcam_overlay = overlay_gradcam(original_resized, heatmap, img_size=IMG_SIZE)
-            except Exception as e:
-                gradcam_error = str(e)
+            st.header("4. Screening result")
+            st.subheader(f"Grade {case['grade']} — {GRADE_LABELS[case['grade']]}")
+            probs = case["raw_probabilities"]
+            cals = case["calibrated_probabilities"]
+            st.table([{"grade": f"{i} ({GRADE_LABELS[i]})",
+                       "raw": round(probs[i], 4),
+                       "calibrated": round(cals[i], 4)} for i in range(5)])
+            st.metric("Calibrated confidence", f"{case['calibrated_confidence']:.4f}")
+            st.caption("Calibrated confidence is not clinical certainty.")
 
-            img_col, gradcam_col, metric_col = st.columns([1, 1, 1])
-            with img_col:
-                st.image(image, caption="Uploaded fundus photograph", width=260)
-            with gradcam_col:
-                if gradcam_overlay is not None:
-                    st.image(gradcam_overlay, caption="Grad-CAM overlay", width=260)
-                else:
-                    st.warning(f"Grad-CAM unavailable: {gradcam_error}")
-            with metric_col:
-                st.metric("Predicted grade", f"{predicted_grade} — {GRADE_LABELS.get(predicted_grade, '?')}")
-                st.metric("Confidence", f"{confidence:.1%}")
+            st.header("5. Referable DR")
+            st.write("Definition: predicted Grade ≥ 2; frozen threshold 0.7 on "
+                     "calibrated P(Grade ≥ 2).")
+            ref = case["referable_score"]
+            st.subheader("REFERABLE" if ref >= 0.7 else "NON_REFERABLE")
+            st.metric("Referable score", f"{ref:.4f}")
 
-            patient_params = {
-                "age": age,
-                "hba1c": hba1c,
-                "diabetes_years": diabetes_years,
-                "visual_acuity": visual_acuity,
-                "spherical_refraction": spherical_refraction,
-            }
-            decision = triage_decision(predicted_grade, confidence, patient_params)
+            if full_evidence:
+                st.header("6. Retinal anatomy")
+                ana_cols = st.columns(3)
+                with ana_cols[0]:
+                    st.write("**Vessels**")
+                    v = case.get("vessel")
+                    if v is not None:
+                        st.image(downscale_for_display(
+                            (np.asarray(v) > 0).astype(np.uint8) * 255),
+                            caption="Vessel evidence map", width=260)
+                    else:
+                        st.caption("Vessel evidence unavailable.")
+                with ana_cols[1]:
+                    st.write("**Optic disc**")
+                    dd = case.get("disc") or {}
+                    st.write(f"Status: {dd.get('status', 'UNKNOWN')}")
+                    if dd.get("center") is not None:
+                        st.write(f"Center: {dd['center']}, radius {dd.get('radius')}")
+                with ana_cols[2]:
+                    st.write("**Fovea**")
+                    fd = case.get("fovea") or {}
+                    st.write(f"Status: {fd.get('status', 'UNKNOWN')}")
+                    if fd.get("center_x_y") is not None:
+                        st.write(f"Center: {fd['center_x_y']}")
 
-            # Session-only case tracking for the Insights tab (Section 2).
-            # Recorded here — right after the rule engine succeeds — rather
-            # than after report generation, since automation rate is a
-            # rule-engine property, independent of whether the downstream
-            # LLM report succeeds. Resets on page reload (session_state is
-            # per-browser-session, not persisted anywhere).
-            if "processed_cases" not in st.session_state:
-                st.session_state.processed_cases = []
-            st.session_state.processed_cases.append({
-                "predicted_grade": predicted_grade,
-                "confidence": confidence,
-                "action": decision["action"],
-                "requires_human_review": decision["requires_human_review"],
-            })
+                st.header("7. Lesion evidence")
+                st.caption("Candidates are heuristic evidence, never confirmed disease. "
+                           "Neovascularization detection is not implemented.")
+                for lt in ("microaneurysm", "hemorrhage", "hard_exudate", "soft_exudate"):
+                    d = (case.get("lesions") or {}).get(lt, {})
+                    with st.expander(f"{lt.replace('_', ' ').title()}: "
+                                     f"{d.get('status', '?')} "
+                                     f"({d.get('candidate_count', 0)} candidates)",
+                                     expanded=False):
+                        for c in (d.get("candidates") or [])[:10]:
+                            st.write(f"- {c.get('candidate_id')}: "
+                                     f"score {c.get('score')}, bbox {c.get('bbox')}")
 
-            index_data, index_error = load_guideline_index()
-            if index_data is None:
-                st.error(
-                    f"Could not load the guideline FAISS index. "
-                    f"Details: {index_error}. Run `python -m src.rag.indexer` "
-                    f"to build it first."
-                )
-                st.stop()
-            index, chunk_mapping = index_data
+                st.header("8. Explainability")
+                ex = case.get("explainability") or {}
+                cons = ex.get("consistency", {}) or {}
+                st.write(f"Consistency: **{cons.get('category', '?')}** — "
+                         f"{cons.get('reason', '')}")
+                for lt, s in (ex.get("lesion_overlap") or {}).items():
+                    st.write(f"- {lt}: spatial agreement "
+                             f"{s.get('lesion_inside_gradcam_fraction')}")
+                st.caption("Spatial agreement is not causal proof.")
 
-            try:
-                query = build_retrieval_query(predicted_grade, decision["action"])
-                retrieved_chunks = retrieve(query, index, chunk_mapping, top_k=3)
-            except Exception as e:
-                st.error(f"Guideline retrieval failed: {e}")
-                st.stop()
+            st.header("9. Triage (Phase 8, displayed verbatim)")
+            tri = case.get("triage", {})
+            st.subheader(f"{tri.get('decision', '?')} [{tri.get('priority', '?')}]")
+            st.write("Reasons:")
+            for r in tri.get("reason_codes", []) or []:
+                st.write(f"- {r}")
+            flags = tri.get("safety_flags", {}) or {}
+            raised = [k for k, v in flags.items() if v]
+            st.write(f"Safety flags: {', '.join(raised) if raised else 'none'}")
+            with st.expander("Deterministic explanation", expanded=False):
+                st.write(tri.get("explanation", ""))
+            for w in tri.get("warnings", []) or []:
+                st.caption(f"Warning: {w}")
 
-            report = generate_report(decision, retrieved_chunks)
+        st.header("10. Report download (Phase 9)")
+        st.caption("Phase 9 ungradable pathway applies automatically when grading "
+                   "was blocked.")
+        if st.button("Generate screening report"):
+            from src.reporting.config import load_reporting_config
+            from src.reporting.deterministic_generator import generate
+            from src.reporting.html_renderer import render_html
+            from src.reporting.json_renderer import render_json
+            from src.reporting.markdown_renderer import render_markdown
+            from src.reporting.pdf_renderer import render_pdf
 
-            st.subheader("Structured pre-report")
+            rep_in = _report_input(case)
+            rep = generate(rep_in, load_reporting_config()).to_dict()
+            st.session_state["report"] = rep
+        if "report" in st.session_state:
+            rep = st.session_state["report"]
+            st.download_button("Download JSON (authoritative)",
+                               render_json(rep), file_name="report.json",
+                               mime="application/json")
+            st.download_button("Download Markdown",
+                               render_markdown(rep), file_name="report.md",
+                               mime="text/markdown")
+            st.download_button("Download HTML",
+                               render_html(rep), file_name="report.html",
+                               mime="text/html")
+            import tempfile
 
-            if report.get("error"):
-                st.error(
-                    f"Report generation failed ({report['error']}) — "
-                    f"showing the rule-engine decision only, findings/"
-                    f"guideline_applied are unavailable this run."
-                )
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tf:
+                render_pdf(rep, tf.name)
+                tf.flush()
+                with open(tf.name, "rb") as f:
+                    pdf_bytes = f.read()
+            st.download_button("Download PDF", pdf_bytes,
+                               file_name="report.pdf",
+                               mime="application/pdf")
 
-            if report.get("requires_human_review"):
-                st.error("⚠️ REQUIRES HUMAN REVIEW")
-            else:
-                st.success("No forced review flag on this decision.")
+        st.header("11. Limitations / safety")
+        st.write(SAFETY_BANNER)
+        for err_stage, err in (case.get("errors") or {}).items():
+            st.error(f"{err_stage} failed: {err}")
+        st.caption(f"Timings (ms): {case.get('timings_ms', {})}")
 
-            st.write(f"**Action:** {report.get('action')}")
-            interval = report.get("interval_months")
-            st.write(f"**Follow-up interval:** {interval} months" if interval is not None else "**Follow-up interval:** N/A")
 
-            st.write("**Findings:**")
-            st.write(report.get("findings") or "_Not available_")
-
-            st.write("**Guideline applied:**")
-            st.write(report.get("guideline_applied") or "_Not available_")
-
-            st.caption(f"Source chunks: {report.get('source_chunks')}")
-            st.caption(
-                "macular_status_assessed: false — this system does not "
-                "assess diabetic macular oedema from a single 2D fundus "
-                "image; see the guideline corpus for why."
-            )
-
-            st.warning(DEVICE_NOTICE)
-
-with tab_insights:
-    # --- 1. Model performance (static) ---
-    st.subheader("Model performance")
-    st.caption(
-        "Fine-tuned EfficientNetB0, validation set. Figures are fixed "
-        "results from training/evaluation (docs/experiments.md), not "
-        "recomputed live by this app."
-    )
-
-    st.metric("Quadratic Weighted Kappa (QWK)", f"{MODEL_QWK:.4f}")
-
-    recall_df = pd.DataFrame({
-        "Grade": [f"{g} — {GRADE_LABELS[g]}" for g in sorted(PER_GRADE_RECALL)],
-        "Recall": [PER_GRADE_RECALL[g] for g in sorted(PER_GRADE_RECALL)],
-    }).set_index("Grade")
-    st.write("Per-grade recall")
-    st.dataframe(recall_df.style.format({"Recall": "{:.3f}"}), use_container_width=True)
-
-    rag_col1, rag_col2 = st.columns(2)
-    rag_col1.metric("RAG hit rate @3", f"{RAG_HIT_RATE_AT_3:.0%}")
-    rag_col2.metric("RAG hit rate @1", f"{RAG_HIT_RATE_AT_1:.0%}")
-
-    st.divider()
-
-    # --- 2. This session (dynamic) ---
-    st.subheader("This session")
-    processed_cases = st.session_state.get("processed_cases", [])
-
-    if not processed_cases:
-        st.info(
-            "No cases processed yet this session. Upload an image and "
-            "click \"Generate Report\" in the Screening tab to populate "
-            "this section."
-        )
-    else:
-        cases_df = pd.DataFrame(processed_cases)
-
-        st.metric("Cases processed this session", len(cases_df))
-
-        grade_counts = cases_df["predicted_grade"].value_counts().sort_index()
-        grade_counts.index = [f"Grade {g}" for g in grade_counts.index]
-        st.write("Grade distribution (this session)")
-        st.bar_chart(grade_counts)
-
-        automation_rate = (~cases_df["requires_human_review"]).mean()
-        st.metric("Automation rate (this session)", f"{automation_rate:.0%}")
-        st.caption(
-            f"{(~cases_df['requires_human_review']).sum()} of {len(cases_df)} "
-            f"cases did not require forced human review."
-        )
-
-    st.divider()
-
-    # --- 3. Full dashboard ---
-    st.subheader("Full dashboard")
-    st.markdown(
-        f"For the complete picture — class distribution, image quality by "
-        f"class, confusion matrix, and the automation-vs-recall trade-off "
-        f"curve — see the full interactive dashboard:\n\n"
-        f"**[View the Tableau dashboard →]({TABLEAU_DASHBOARD_URL})**"
-    )
-
-    st.divider()
-
-    # --- 4. EDA (dataset-level, kept from the original implementation) ---
-    st.subheader("EDA insights")
-    st.caption(
-        "Deliberately minimal — superseded by the Tableau dashboard above; "
-        "shown here only as a quick sanity view over the training dataset."
-    )
-
-    try:
-        eda_df = pd.read_csv(EDA_SUMMARY_PATH)
-    except FileNotFoundError:
-        st.info(
-            f"`{EDA_SUMMARY_PATH}` not found. Generate it from "
-            f"`notebooks/01_data_download_eda.ipynb` (Block 4) to populate "
-            f"this tab."
-        )
-    except Exception as e:
-        st.error(f"Could not load EDA summary: {e}")
-    else:
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.write("Class distribution")
-            if "diagnosis" in eda_df.columns:
-                st.bar_chart(eda_df["diagnosis"].value_counts().sort_index())
-            else:
-                st.warning("No 'diagnosis' column found in eda_summary.csv")
-
-        with col2:
-            st.write("Luminance distribution")
-            if "mean_luminance" in eda_df.columns:
-                counts, bin_edges = np.histogram(eda_df["mean_luminance"].dropna(), bins=20)
-                bin_labels = [f"{int(bin_edges[i])}-{int(bin_edges[i + 1])}" for i in range(len(counts))]
-                st.bar_chart(pd.DataFrame({"count": counts}, index=bin_labels))
-            else:
-                st.warning("No 'mean_luminance' column found in eda_summary.csv")
+def _report_input(case):
+    """Map orchestrator output onto the Phase 9 input contract (no recompute)."""
+    tri = case.get("triage", {}) or {}
+    lesions = {}
+    for lt, d in (case.get("lesions") or {}).items():
+        lesions[lt] = {"status": d.get("status", "UNKNOWN"),
+                       "candidate_count": d.get("candidate_count", 0),
+                       "confidence": d.get("confidence", 0.0),
+                       "total_evidence_area": 0,
+                       "candidates": d.get("candidates", [])}
+    disc = case.get("disc") or {}
+    fovea = case.get("fovea") or {}
+    ex = case.get("explainability") or {}
+    return {
+        "image_id": "streamlit-upload",
+        "quality": case.get("quality", {}),
+        "enhancement": case.get("enhancement") or {},
+        "grading": {"predicted_grade": case.get("grade"),
+                    "raw_probabilities": case.get("raw_probabilities", []),
+                    "calibrated_probabilities": case.get("calibrated_probabilities", []),
+                    "calibrated_confidence": case.get("calibrated_confidence")},
+        "referable": {"score": case.get("referable_score"), "threshold": 0.7},
+        "lesions": lesions,
+        "vessels": {"available": case.get("vessel") is not None},
+        "optic_disc": {"status": disc.get("status", "UNKNOWN"),
+                       "center": disc.get("center"), "radius": disc.get("radius"),
+                       "confidence": disc.get("confidence")},
+        "fovea": {"status": fovea.get("status", "UNKNOWN"),
+                  "center_x_y": fovea.get("center_x_y"),
+                  "confidence": fovea.get("confidence")},
+        "explainability": {"consistency": ex.get("consistency", {}),
+                           "lesion_overlap": ex.get("lesion_overlap", {}),
+                           "gradcam": ex.get("gradcam", {}),
+                           "figure": None},
+        "triage": tri,
+        "warnings": list(case.get("warnings", [])),
+    }

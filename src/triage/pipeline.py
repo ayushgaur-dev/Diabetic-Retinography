@@ -26,6 +26,9 @@ def build_input(quality=None, grade=None, raw_probs=None, temperature=0.9542,
                           "confidence": d.get("confidence", 0.0)}
     disc_d = disc.to_dict() if hasattr(disc, "to_dict") else (disc or {})
     fovea_d = fovea.to_dict() if hasattr(fovea, "to_dict") else (fovea or {})
+    # NOTE (Phase 10A crash-fix): availability is `is not None`. A numpy
+    # vessel mask must not be bool()-coerced (ambiguous truth value crash);
+    # an empty-but-present mask still means the module ran.
     return TriageInput(
         quality_status=q.get("status", "UNKNOWN"),
         quality_score=float(q.get("overall_score", quality_score)),
@@ -36,7 +39,7 @@ def build_input(quality=None, grade=None, raw_probs=None, temperature=0.9542,
         calibrated_confidence=float(max(cal)),
         referable_score=float(sum(cal[ref_min:])),
         lesion_evidence=lesions,
-        vessel_available=bool(vessel),
+        vessel_available=vessel is not None,
         optic_disc_status=str(disc_d.get("status", "UNKNOWN")),
         fovea_status=str(fovea_d.get("status", "UNKNOWN")),
         consistency=str((consistency or {}).get("category", "UNKNOWN")
