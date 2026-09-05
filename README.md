@@ -32,17 +32,45 @@ Model weights (gitignored, ~23 MB, Hugging Face):
 (see `docs/MODEL_ARTIFACTS.md`). RAG/LLM features additionally need
 `OPENAI_API_KEY`; all screening paths work without it.
 
-## Run
 
+
+## RUN***
+Every time you want to run it
+
+## Terminal 1 — backend (wait ~30 sec for TensorFlow to load):
+.\venv\Scripts\python.exe -m uvicorn backend.api:app --port 8001
+
+## Terminal 2 — website:
+cd frontend
+node node_modules/next/dist/bin/next start -p 3001
+
+Then open: http://127.0.0.1:3001 → Start screening → upload → Analyze.
+
+
+## Run
 - Streamlit reference UI:
   `.\venv\Scripts\python.exe -m streamlit run app/streamlit_app.py`
 - FastAPI backend:
-  `.\venv\Scripts\python.exe -m uvicorn backend.api:app --port 8001`
+  .\venv\Scripts\python.exe -m uvicorn backend.api:app --port 8001
 - Next.js frontend (`frontend/`, needs `npm.cmd install` once):
   dev `node node_modules/next/dist/bin/next dev`, prod `.../next build` + `.../next start -p 3001`
 - MATLAB (`matlab/`, needs MATLAB + Image Processing Toolbox):
   `startup; run_all_tests` — Simulink scenarios: `run_all_scenarios()`
 - Tests: `.\venv\Scripts\python.exe -m pytest tests/ -q`
+
+## Demo (no datasets or keys needed)
+
+Verified synthetic fixtures in `demo/fixtures/` (GOOD, BORDERLINE,
+UNGRADABLE — each checked through the real quality gate; recipe in
+`demo/make_fixtures.py`):
+
+- Web: open the frontend → *Try synthetic demo*, or upload
+  `demo/fixtures/demo_good.png` (grades) / `demo_ungradable.png`
+  (recapture path).
+- API: `POST /api/demo`.
+- Reports: `python -m src.reporting.demo --example refer`.
+
+Follow `docs/SIH_DEMO_SCRIPT.md` for the 5–7 minute walkthrough.
 
 ## Docs index
 
