@@ -1,12 +1,14 @@
 import type { JobState } from "./types";
 
 const BASE = (() => {
-  // Runtime resolution (not build-time env): works on localhost, 127.0.0.1,
-  // and LAN IPs without rebuilding. Backend port is fixed at 8001.
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
+  }
+  // Local development fallback: works on localhost, 127.0.0.1, and LAN IPs
   if (typeof window !== "undefined" && window.location?.hostname) {
     return `${window.location.protocol}//${window.location.hostname}:8001`;
   }
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8001";
+  return "http://127.0.0.1:8001";
 })();
 
 async function json<T>(res: Response): Promise<T> {

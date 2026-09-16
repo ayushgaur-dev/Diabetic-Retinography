@@ -3,6 +3,7 @@ itself only calls app/screening_pipeline.run_screening(). No pipeline
 logic here or in the frontend."""
 
 import io
+import os
 import sys
 from pathlib import Path
 
@@ -19,10 +20,22 @@ app = FastAPI(title="SIH26038 Screening API",
               description="Thin adapter over the frozen Python screening pipeline.",
               version="1.0.0")
 
+_cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+_frontend_env = os.getenv("FRONTEND_URL")
+if _frontend_env:
+    for origin in _frontend_env.split(","):
+        cleaned = origin.strip().rstrip("/")
+        if cleaned and cleaned not in _cors_origins:
+            _cors_origins.append(cleaned)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000",
-                   "http://localhost:3001", "http://127.0.0.1:3001"],
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

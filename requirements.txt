@@ -7,6 +7,7 @@ tensorflow==2.21.0
 scikit-learn==1.7.2
 sentence-transformers==5.7.0
 faiss-cpu==1.15.0
+huggingface-hub==1.30.0
 kagglehub==1.0.2
 streamlit==1.60.0
 openai==3.0.0
