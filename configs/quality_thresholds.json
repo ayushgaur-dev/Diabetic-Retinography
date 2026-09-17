@@ -1,11 +1,11 @@
 {
-  "_comment": "SIH26038 Phase 2 — image-quality thresholds. ALL values are ENGINEERING HEURISTICS set from synthetic-fixture measurements (see docs/IMAGE_QUALITY_ASSESSMENT.md). They are NOT clinically validated. Tune on real data in later phases; never hard-code replacements in Python.",
+  "_comment": "SIH26038 Phase 2 — image-quality thresholds. Focus good_var/borderline_var RECALIBRATED on real APTOS fundus data (TRAIN n=2563 for candidacy, VAL n=549 for selection; frozen TEST n=550 untouched) at fixed 224x224 quality scale. All values remain ENGINEERING/RESEARCH HEURISTICS — NOT clinically validated. External clinical validation still required. See reports/quality_calibration/ for sweep evidence.",
   "focus": {
-    "comment": "Laplacian variance inside retinal mask (uint8 gray, 224px reference scale). Log-normalised: score = clamp((log10(var+1)-log_lo)/(log_hi-lo)).",
+    "comment": "Laplacian variance inside retinal mask (uint8 gray, FIXED 224x224 reference scale). Recalibrated: GOOD 120 ~= TRAIN/VAL median (~121/123); BAD 40 ~= TRAIN p6-7 (VAL reject 8.7% vs 17.7% baseline). Previous synthetic-derived 300/60 rejected ~99% of real images. Log-normalisation lo/hi unchanged (scores advisory only; gate acts on status). Frozen test never inspected during tuning.",
     "log_lo": 1.6,
     "log_hi": 3.0,
-    "good_var": 300.0,
-    "borderline_var": 60.0
+    "good_var": 120.0,
+    "borderline_var": 40.0
   },
   "illumination": {
     "comment": "Median gray inside mask (0-255) + non-uniformity = std of 4x4 block means inside mask.",

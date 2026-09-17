@@ -83,7 +83,10 @@ def test_shared_threshold_files_exist():
     for name in ("quality_thresholds", "calibration_config", "triage_config"):
         assert (REPO / "configs" / f"{name}.json").exists()
     qc = json.load(open(REPO / "configs" / "quality_thresholds.json"))
-    assert qc["focus"]["good_var"] == 300.0  # value MATLAB tests assert too
+    # Real-fundus recalibrated (TRAIN/VAL; frozen test untouched); MATLAB
+    # TestQuality.thresholdsAreShared asserts the same value.
+    assert qc["focus"]["good_var"] == 120.0  # value MATLAB tests assert too
+    assert qc["focus"]["borderline_var"] == 40.0
 
 
 def test_matlab_fixtures_valid():

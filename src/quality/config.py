@@ -12,7 +12,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = REPO_ROOT / "configs" / "quality_thresholds.json"
 
 DEFAULTS = {
-    "focus": {"log_lo": 1.6, "log_hi": 3.0, "good_var": 300.0, "borderline_var": 60.0},
+    # Fallback mirrors configs/quality_thresholds.json (real-fundus recalibrated:
+    # GOOD 120 ~= APTOS median, BAD 40 ~= p6-7; 224x224 scale; research heuristics only).
+    "focus": {"log_lo": 1.6, "log_hi": 3.0, "good_var": 120.0, "borderline_var": 40.0},
     "illumination": {
         "median_good_lo": 50.0, "median_good_hi": 150.0,
         "median_borderline_lo": 30.0, "median_borderline_hi": 180.0,

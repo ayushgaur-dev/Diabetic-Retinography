@@ -43,16 +43,41 @@ one-line caption. Direct image→prediction code paths are preserved.
 
 All thresholds live in `configs/quality_thresholds.json` (JSON chosen: stdlib
 only, zero new dependencies; repo convention is no-config — this is the first
-config file). Key values: focus good/borderline variance 300/60; illumination
+config file). Key values: focus good/borderline variance **120/40
+(recalibrated on real APTOS fundus data — see §4a)**; illumination
 median good 50–150, borderline 30–180, non-uniformity 18/30; contrast std
 15/8 with excessive cap 70; exposure black 8%/20%, white 2%/8%; field fraction
 40%/20% (plausible floor 5%); completeness 75%/55%.
 
-**Every threshold is an ENGINEERING HEURISTIC**, set from synthetic-fixture
-measurements (sharp 1556 vs blurred 1.8 lap-var; dark median 19; mask fraction
-0.64 for a full circular field vs 0.05 for a small one). NOT clinically
-validated. No threshold is hard-coded in Python (enforced by
+**Every threshold is an ENGINEERING/RESEARCH HEURISTIC**, NOT clinically
+validated. Focus was recalibrated from synthetic fixtures to real APTOS
+train/validation measurements (frozen test untouched); all other components
+retain synthetic-era values. No threshold is hard-coded in Python (enforced by
 `test_no_thresholds_hardcoded_in_component_modules`).
+
+## 4a. Focus recalibration (real fundus, 224×224 fixed scale)
+
+- **Quality is evaluated at fixed 224×224** (`app/screening_pipeline.py`
+  resizes before `assess_image`; grading uses the same 224 input).
+- Old synthetic thresholds (GOOD ≥300 / BAD <60, from sharp-1556 vs
+  blurred-1.8 fixtures) rejected ~99% of real APTOS images as non-GOOD
+  (VAL: GOOD 0.5%, BORDERLINE 81.8%, UNGRADABLE 17.7%).
+- Real APTOS TRAIN (n=2563) focus at 224: p5 33.7 / p25 74.5 / **p50 121**
+  / p75 159 / p90 200; VAL (n=549) p50 123 — stable across splits.
+- Candidate sweep on **VAL only** (GOOD ∈ {80,100,120,150,180,200} ×
+  BAD ∈ {25,40,60}, BAD<GOOD): BAD drives pass/reject, GOOD splits
+  GOOD vs BORDERLINE. Full sweep in
+  `reports/quality_calibration/calibration_report.md`.
+- **Selected: GOOD ≥120 (~median) / BAD <40 (~TRAIN p6–7).**
+  VAL result: GOOD 32.1% / BORDERLINE 59.2% / UNGRADABLE 8.7%
+  (pass 91.3% vs 82.3% baseline); grade pass 79.5–93.4% (grade 4
+  lowest — noted bias); referable pass 88.3% vs non-referable 93.3%;
+  downstream VAL referable sens/spec among graded 0.949/0.852 (stable).
+  BAD 25 was the higher-coverage alternative (pass 95.8%, minimal bias)
+  but halves the safety margin; kept as documented alternative.
+- **Frozen final test (n=550) was never inspected or used during tuning.**
+  Grading model, temperature, referable threshold and Phase 5 config
+  unchanged. External clinical validation still required.
 
 ## 5. Quality states
 
@@ -92,9 +117,10 @@ Figure rendering (matplotlib) is the slowest step and runs only on demand.
 
 ## 10. Limitations
 
-- Thresholds are heuristics from synthetic fixtures, NOT tuned on real APTOS
-  images and NOT clinically validated — re-tune with measured data before any
-  clinical use (later phase).
+- Focus thresholds are real-fundus recalibrated (APTOS TRAIN/VAL) but remain
+  RESEARCH heuristics, NOT clinically validated — external clinical validation
+  is still required before any clinical use. All other components retain
+  synthetic-era heuristics.
 - No real-fundus validation yet (APTOS raw images absent); solid-gray and
   black images are rejected, but adversarial/near-duplicate edge cases are
   untested.

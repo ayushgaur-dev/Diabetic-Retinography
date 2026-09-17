@@ -18,7 +18,9 @@ classdef TestQuality < matlab.unittest.TestCase
         end
         function thresholdsAreShared(testCase)
             cfg = load_json_config('quality_thresholds');
-            testCase.verifyEqual(cfg.focus.good_var, 300.0, 'AbsTol', 1e-9);
+            % Real-fundus recalibrated (APTOS TRAIN/VAL; frozen test untouched).
+            testCase.verifyEqual(cfg.focus.good_var, 120.0, 'AbsTol', 1e-9);
+            testCase.verifyEqual(cfg.focus.borderline_var, 40.0, 'AbsTol', 1e-9);
             testCase.verifyEqual(cfg.aggregation.weights.field_of_view, 1.5);
         end
         function ungradableRouting(testCase)
